@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\misc">
+      <UniqueIdentifier>{11f1fa44-2fda-4eaa-8b9d-61c5354ee3be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\TBP">
+      <UniqueIdentifier>{a93286c5-d0fa-40c1-9b1a-d57d96e206dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Piece">
+      <UniqueIdentifier>{0488a408-b2c5-421e-9e96-470d86734728}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Bot">
+      <UniqueIdentifier>{a41ebe22-3331-45c2-bd6a-ad6fbd738a13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Board">
+      <UniqueIdentifier>{cb7669d5-7b58-4c21-a94c-f95dcfe137fb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="olcPixelGameEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Board.hpp">
+      <Filter>Source Files\Board</Filter>
+    </ClInclude>
+    <ClInclude Include="Color.hpp">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Coord.hpp">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Piece.hpp">
+      <Filter>Source Files\Piece</Filter>
+    </ClInclude>
+    <ClInclude Include="Rotation.hpp">
+      <Filter>Source Files\Piece</Filter>
+    </ClInclude>
+    <ClInclude Include="info.hpp">
+      <Filter>Source Files\TBP</Filter>
+    </ClInclude>
+    <ClInclude Include="location.hpp">
+      <Filter>Source Files\TBP</Filter>
+    </ClInclude>
+    <ClInclude Include="moves.hpp">
+      <Filter>Source Files\TBP</Filter>
+    </ClInclude>
+    <ClInclude Include="suggestion.hpp">
+      <Filter>Source Files\TBP</Filter>
+    </ClInclude>
+    <ClInclude Include="search.hpp">
+      <Filter>Source Files\Bot</Filter>
+    </ClInclude>
+    <ClInclude Include="Tetris.hpp">
+      <Filter>Source Files\Bot</Filter>
+    </ClInclude>
+    <ClInclude Include="BoardAttr.hpp">
+      <Filter>Source Files\Board</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Board.cpp">
+      <Filter>Source Files\Board</Filter>
+    </ClCompile>
+    <ClCompile Include="Piece.cpp">
+      <Filter>Source Files\Piece</Filter>
+    </ClCompile>
+    <ClCompile Include="PieceDef.cpp">
+      <Filter>Source Files\Piece</Filter>
+    </ClCompile>
+    <ClCompile Include="Rotation.cpp">
+      <Filter>Source Files\Piece</Filter>
+    </ClCompile>
+    <ClCompile Include="search.cpp">
+      <Filter>Source Files\Bot</Filter>
+    </ClCompile>
+    <ClCompile Include="TBP.cpp">
+      <Filter>Source Files\Bot</Filter>
+    </ClCompile>
+    <ClCompile Include="TetrisBot.cpp">
+      <Filter>Source Files\Bot</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
