@@ -71,12 +71,21 @@ constexpr inline Piece playPiece(const Piece& piece, const std::vector<inputs> &
 
 typedef std::array<std::array<std::array<std::array<std::unique_ptr<Cell>, LOGICALBOARDHEIGHT + 2>, BOARDWIDTH + 2>, number_of_RotationDirections>, int(spin::numberOfSpins)> boardtype;
 
+class FullPiece {
+public:
+    FullPiece(std::vector<inputs> &inputs, Piece &piece, spin spin) noexcept : piece(piece), spin(spin) {
+        std::swap(inputs, this->inputs);
+    }
+    std::vector<inputs> inputs;
+    Piece piece;
+    spin spin;
+};
 // this class will store a board where each cell points to a piece and its movements to get to that cell
 class movementBoard
 {
 public:
     uint16_t numberOfPopulatedCells = 0;
-    inline void addCell(boardtype &board, std::unique_ptr<Cell> cell, Coord location, RotationDirection rot, spin spn = spin::None) noexcept {
+    const inline void addCell(boardtype &board, std::unique_ptr<Cell> cell, Coord location, RotationDirection rot, spin spn = spin::None) noexcept {
         if (board.at(spn).at(rot).at(location.x).at(location.y) != nullptr) {
             numberOfPopulatedCells++;
         }
@@ -88,7 +97,7 @@ public:
 	}
     // needed padding as the X coordinate of a placed piece can be negative 1
     // padding the board on all 4 sides by one
-    std::vector<Piece> pieces{};
+    std::vector<FullPiece> pieces{};
 	const void DijkstraFaithful(const Board& board, const Piece& piece);
-	const void find_moves(const Board& board, const Piece& piece) noexcept;
+    const void find_moves(const Board& board, const Piece& piece) noexcept;
 };

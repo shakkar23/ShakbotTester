@@ -57,8 +57,7 @@ const void movementBoard::find_moves(const Board & board, const Piece & piece)no
     intermediateBoard = std::make_unique<boardtype>();
 	
     clearBoard();
-    //std::unique_ptr<movementBoard> moves = std::make_unique<movementBoard>();
-    //movementBoard moves;
+
     inputNode root;
     std::vector<inputNode*> nodes = { &root };
     std::vector<inputNode*> nextNodes;
@@ -119,9 +118,6 @@ const void movementBoard::find_moves(const Board & board, const Piece & piece)no
                     break;
                 }
 
-                // if the piece is colliding with the board, we don't need to check the rest of the inputs
-                //if (board.isCollide(tempPiece))
-                //    continue;
                 auto addcell = [](inputNode*& node, std::vector<inputNode*> &nextNodes, const inputs &input, 
                     const uint_fast16_t &depth, const Piece &tempPiece, movementBoard * self, spin spinned, boardtype &board){
                     
@@ -132,10 +128,7 @@ const void movementBoard::find_moves(const Board & board, const Piece & piece)no
                         hist.push_back(input);
 
                         inputNode* currentNode = new inputNode(hist, depth);
-
                         self->addCell(board,historyToCell(hist, depth), { int_fast8_t(tempPiece.x + int_fast8_t(1)), int_fast8_t(tempPiece.y + int_fast8_t(1)) }, tempPiece.spin, spinned);
-
-
 
                         //add populated node to the next nodes to evaluate
                         nextNodes.push_back(currentNode);
@@ -186,7 +179,7 @@ const void movementBoard::find_moves(const Board & board, const Piece & piece)no
                         spin temp;
                         Piece p = playPiece(piece, intermediateBoard->at(spn).at(rot).at(x).at(y)->inputs, board, temp);
                         if (!board.trySoftDrop(p))
-                            this->pieces.push_back(p);
+                            this->pieces.push_back(FullPiece(intermediateBoard->at(spn).at(rot).at(x).at(y)->inputs, p , temp));
                     }
                 }
             }
