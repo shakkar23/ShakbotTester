@@ -199,7 +199,7 @@ class Visualizer : public olc::PixelGameEngine {
 	}
 
 	// get all the possible piece placements, playing as the piece you pass in 
-	const void fromPlay(const Piece& piece) {
+	constexpr void fromPlay(const Piece& piece) {
 
 		using namespace std::chrono;
 
@@ -214,7 +214,7 @@ class Visualizer : public olc::PixelGameEngine {
 		std::cout << time_span << std::endl;
 	}
 	
-	const void queueShenanigans(const Board  board,const std::array<Piece, 5> &queue) {
+	constexpr void queueShenanigans(const Board  board,const std::array<Piece, 5> &queue) {
 		int curPiece = 0;
 		Piece emulatedHold = PieceType::empty;
 		uint_fast8_t bitmask = 0;
