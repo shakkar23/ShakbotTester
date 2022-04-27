@@ -381,6 +381,7 @@ void Tetris::backGroundThread() {
     };
 
     while (true) {
+        this->needPlays = false;
         // wait for the game to start
         std::unique_lock<std::mutex> ul(botMux);
         condVar.wait(ul, [&] { return startBot; });
@@ -438,7 +439,6 @@ void Tetris::backGroundThread() {
 						    }
                             botReturnInput = top->input;
                             playsProcessed = true;
-                            this->needPlays = false;
                             ul.unlock();
                             condVar.notify_one();
 							
