@@ -8,21 +8,29 @@
 #include "info.hpp"
 #include "search.hpp"
 #include <atomic>
+#include <thread>
+#include <condition_variable>
+#include <functional>
 class movementBoard;
 class Tetris
 {
 public:
     Tetris() {
         moveBoard = std::make_unique<movementBoard>();
+        bot = std::jthread(std::function<void()>([&]() { backGroundThread(); }));
     }
     std::unique_ptr<movementBoard> moveBoard;
     Board board = Board();
     Piece hold = Piece(PieceType::empty);
-    Piece queue[5] = {PieceType::empty,PieceType::empty ,PieceType::empty ,PieceType::empty ,PieceType::empty };
-    Piece piece = (PieceType::empty);
+    std::vector<Piece> queue;
+    std::vector<std::vector<inputs>> botReturnInput;
+    Piece piece = Piece(PieceType::L);
     std::atomic_int32_t combo;
-    std::atomic_bool backToBack = 0;
-    std::atomic_bool isStop;
+    bool startBot = false;
+    bool playsProcessed = false;
+    std::atomic_bool needPlays = false;
+    bool endBot = true;
+	
 
     // frontEnd to bot
 
@@ -75,7 +83,20 @@ public:
     void sugestion(suggestion moves);
 
     // private
-private:
+public:
     std::pair<int32_t, int32_t> bumpiness(Board& board, size_t well);
-    int eval(Board board);
+    const int eval(const   Board& board, const bool ClearedLines, const int nDamageSent) const;
+    const int eval(const BitBoard& board, const bool ClearedLines, const int nDamageSent) const;
+
+
+    void waitForStart();
+    void EventStart();
+    void waitForEnd();
+    void EventEnd();
+    void backGroundThread();
+    std::jthread bot;
+	
+    // signal this for the bot to wake back up
+    std::condition_variable condVar;
+	std::mutex botMux;
 };

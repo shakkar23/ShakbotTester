@@ -1,36 +1,94 @@
 #pragma once
 
-#include "BoardAttr.hpp"
-#include "Piece.hpp"
-#include "Rotation.hpp"
-#include "Color.hpp"
-#include <array>
+#include "Board.hpp"
+#include <cassert>
 
-class Piece;
-class Board
-{
+    enum minotype {
+        isEmpty = 0,
+        isFull = 1
+    };
+class BitBoard {
 public:
-    constexpr Board() noexcept
-    {
-        clear();
+	struct row {
+		constexpr row() : m_row(0) {};
+		uint16_t m_row : BOARDWIDTH;
+	};
+
+    // compare two bitboards from the bottom row to the top
+    constexpr bool operator==(const BitBoard& rhs) const {
+        for (uint8_t i = 0; i< LOGICALBOARDHEIGHT; ++i) {
+			if (m_rows[i].m_row != rhs.m_rows[i].m_row) {
+				return false;
+			}
+		}
+        return true;
+	}
+	
+	
+	constexpr inline row getRow(int row) const {
+		return m_rows[row];
+	}
+	
+	constexpr inline minotype getBit(int x, int y) const {
+		//auto one = (m_rows[y].m_row & (1 << (BOARDWIDTH - x - 1))&1);
+        auto two = (m_rows[y].m_row >> (BOARDWIDTH - x - 1)) & 1;
+        //assert(one == two);
+		return minotype(two);
+	}
+	
+	constexpr inline void setBit(int row, int col, minotype val) {
+		m_rows[col].m_row |= (val << (BOARDWIDTH - row - 1));
+	}
+
+	// conversion from BitBoard to Board
+	// the board loses all color, and is now all garbage
+	constexpr inline Board toBoard() const {
+		Board board;
+		for(int i = 0; i < LOGICALBOARDHEIGHT; i++) {
+			for(int j = 0; j < BOARDWIDTH; j++) {
+				if(getBit(i, j) == isFull) {
+					board.board[i][j] = ColorType::garbage;
+				}
+			}
+		}
+		return board;
+	}
+	
+    // conversion from Board to BitBoard
+	// the board loses all color
+	constexpr inline static BitBoard fromBoard(const Board& board) {
+		BitBoard bitBoard;
+		for(int i = 0; i < LOGICALBOARDHEIGHT; i++) {
+			for(int j = 0; j < BOARDWIDTH; j++) {
+				if(board.board[j][i] != ColorType::empty) {
+					bitBoard.setBit(j, i, isFull);
+				}
+			}
+		}
+		return bitBoard;
+	}
+
+    constexpr inline bool isBoardEmpty() noexcept {
+        for (uint8_t i = 0; i< LOGICALBOARDHEIGHT; ++i) {
+            if (m_rows[i].m_row != isEmpty) {
+                return false;
+            }
+        }
+        return true;
     }
+
     constexpr inline void makeBoardGarbage() noexcept
     {
-        for (auto& lines : board)
-            for (auto& mino : lines)
-            {
-                if (mino != ColorType::empty)
-                    mino = ColorType::garbage;
-            }
+        for (auto& width : m_rows)
+        {
+            width.m_row = 0b1111111111;
+        }
     }
     constexpr inline void clear() noexcept
     {
-        for (auto& width : board)
+        for (auto& width : m_rows)
         {
-            for (auto& cell : width)
-            {
-                cell = empty;
-            }
+            width.m_row = isEmpty;
         }
     }
     constexpr inline int clearLines() noexcept
@@ -41,14 +99,10 @@ public:
             for (uint_fast16_t w = 0; w < BOARDWIDTH; w++)
             {
 
-                bool b = (h & 1);
-                if (b)
-                    if (board.at(w).at(h) == empty)
+                    if (getBit((w),(h)) == isEmpty)
                         break;
                     else
                         ;
-                else if (board.at(w).at(h) == empty)
-                    break;
                 if (w == BOARDWIDTH - 1)
                 {
                     clearLine(h);
@@ -65,28 +119,21 @@ public:
         if (whichLine >= LOGICALBOARDHEIGHT)
             whichLine = LOGICALBOARDHEIGHT - 1;
         // clear the line in question
-        for (size_t i = 0; i < BOARDWIDTH; i++)
-        {
-            board.at(i).at(whichLine) = empty;
-        }
+            m_rows[whichLine].m_row = isEmpty;
 
         // pull down the rest of the lines above the cleared line down
-        for (size_t w = 0; w < BOARDWIDTH; w++)
-        {
             for (size_t h = whichLine; h < LOGICALBOARDHEIGHT; h++)
             {
                 if (h == (LOGICALBOARDHEIGHT - 1))
                 {
-
-                    board.at(w).at(h) = empty;
+                    m_rows[LOGICALBOARDHEIGHT - 1].m_row = isEmpty;
                     break;
                 }
                 else
                 {
-                    board.at(w).at(h) = board.at(w).at((h + 1));
+                    m_rows[h].m_row = m_rows[h + 1].m_row;
                 }
             }
-        }
     }
     constexpr inline void sonicDrop(Piece& piece) const noexcept
     {
@@ -104,39 +151,40 @@ public:
     }
     constexpr inline void setPiece(const Piece& piece) noexcept
     {
+        if (piece.kind == PieceType::empty)
+            return;
         for (auto& coord : piece.piecedef)
         {
             if ((((0 <= (coord.y + piece.y)) && ((coord.y + piece.y) < LOGICALBOARDHEIGHT))) && (((0 <= (coord.x + piece.x)) && ((coord.x + piece.x) < BOARDWIDTH)))) // if inbounds of board
             {
-
-                board.at(coord.x + piece.x).at((coord.y + piece.y)) = PieceTypeToColorType(piece.kind);
+                setBit((coord.x + piece.x),((coord.y + piece.y)) , isFull);
             }
         }
     }
-    constexpr inline bool isCollide(const Piece& piece) const noexcept
-    {
+	constexpr inline bool isCollide(const Piece& piece) const noexcept
+	{
 
-        for (const auto& coord : piece.piecedef)
-        {
+		for (const auto& coord : piece.piecedef)
+		{
 
-            if ((((0 <= (coord.y + piece.y)) && ((coord.y + piece.y) < LOGICALBOARDHEIGHT))) && (((0 <= (coord.x + piece.x)) && ((coord.x + piece.x) < BOARDWIDTH)))) // if inbounds of board
-            {
-                if (board[coord.x + piece.x][coord.y + piece.y] != empty) // is the cell in the board matrix empty
-                    return true;
-            }
+			if ((((0 <= (coord.y + piece.y)) && ((coord.y + piece.y) < LOGICALBOARDHEIGHT))) && (((0 <= (coord.x + piece.x)) && ((coord.x + piece.x) < BOARDWIDTH)))) // if inbounds of board
+			{
+				if (getBit(coord.x + piece.x,coord.y + piece.y) == isFull) // is the cell in the board matrix empty
+					return true;
+			}
 
-            if (((coord.x + piece.x) < 0) || ((coord.x + piece.x) >= BOARDWIDTH)) // cant be out of bounds on either direction
-            {
-                return true;
-            }
+			if (((coord.x + piece.x) < 0) || ((coord.x + piece.x) >= BOARDWIDTH)) // cant be out of bounds on either direction
+			{
+				return true;
+			}
 
-            if ((coord.y + piece.y) < 0) // can be above, but not below the board
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+			if ((coord.y + piece.y) < 0) // can be above, but not below the board
+			{
+				return true;
+			}
+		}
+		return false;
+	}
     constexpr inline bool tryRotate(Piece& piece, TurnDirection direction, spin& Tspinned) const noexcept
     {
         constexpr auto incrRotClockWise = [&](RotationDirection& spin) noexcept
@@ -159,15 +207,15 @@ public:
                 break;
             }
         };
-        constexpr auto TspinDetection = [](const Piece& piece, const Board& board, spin& Tspinned, RotationDirection dir, int kick)noexcept
+        constexpr auto TspinDetection = [](const Piece& piece, const BitBoard& board, spin& Tspinned, RotationDirection dir, int kick)noexcept
         {
-            constexpr auto isntEmpty = [](int x, int y, const Board& board)noexcept
+            constexpr auto isntEmpty = [](int x, int y, const BitBoard& board)noexcept
             {
                 if ((((0 <= y) && (y < LOGICALBOARDHEIGHT))) && (((0 <= x) && (x < BOARDWIDTH)))) // if inbounds of board
                 {
                     // if (piece.piecedef[y][x] != empty) // is the cell empty in the piece matrix is empty
-                    
-                    return (board.board.at(x).at(y) != empty); // is the cell in the board matrix empty
+
+                    return (board.getBit(x,y) == isFull); // is the cell in the board matrix empty
                 }
 
                 if ((x < 0) || (x >= BOARDWIDTH)) // cant be out of bounds on either direction
@@ -224,13 +272,14 @@ public:
                 if (a && b && (c || d))
                     Tspinned = spin::Full;
                 else if ((a || b) && c && d)
-                {   
+                {
                     if (kick >= (kicks - 1)) {
                         Tspinned = spin::Full;
-                    } else
+                    }
+                    else
                         Tspinned = spin::Mini;
                 }
-                else 
+                else
                     Tspinned = spin::None;
             }
         };
@@ -337,51 +386,12 @@ public:
         {
             piece.rotate180();
         }
+        sizeof(BitBoard);
         return false;
     }
-
-    constexpr inline char colorTypeToString(const ColorType color) noexcept
-    {
-        switch (color)
-        {
-        case S:
-            return 'S';
-            break;
-        case Z:
-            return 'Z';
-            break;
-        case J:
-            return 'J';
-            break;
-        case L:
-            return 'L';
-            break;
-        case T:
-            return 'T';
-            break;
-        case O:
-            return 'O';
-            break;
-        case I:
-            return 'I';
-            break;
-        case empty:
-        case line_clear:
-        case garbage:
-        case number_of_ColorTypes:
-        default:
-            return '#';
-        }
-    }
     constexpr inline bool rowIsEmpty(const int row) const {
-        for (const auto& column : board)
-        {
-            if (column[row] != empty)
-                return false;
-        }
-        return true;
-
+        return (getRow(row).m_row == isEmpty);
     }
-
-    std::array<std::array<ColorType, LOGICALBOARDHEIGHT>, BOARDWIDTH> board{};
+	
+	std::array<row,LOGICALBOARDHEIGHT> m_rows{};
 };

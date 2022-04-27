@@ -20,6 +20,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BitBoard.hpp" />
     <ClInclude Include="Board.hpp" />
     <ClInclude Include="BoardAttr.hpp" />
     <ClInclude Include="Color.hpp" />
@@ -35,6 +36,7 @@
     <ClInclude Include="Tetris.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BitBoard.cpp" />
     <ClCompile Include="Board.cpp" />
     <ClCompile Include="Piece.cpp" />
     <ClCompile Include="PieceDef.cpp" />

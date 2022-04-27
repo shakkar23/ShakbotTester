@@ -69,6 +69,9 @@
     <ClInclude Include="BoardAttr.hpp">
       <Filter>Source Files\Board</Filter>
     </ClInclude>
+    <ClInclude Include="BitBoard.hpp">
+      <Filter>Source Files\Board</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -94,6 +97,9 @@
     </ClCompile>
     <ClCompile Include="TetrisBot.cpp">
       <Filter>Source Files\Bot</Filter>
+    </ClCompile>
+    <ClCompile Include="BitBoard.cpp">
+      <Filter>Source Files\Board</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
