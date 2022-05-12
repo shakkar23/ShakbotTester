@@ -6,16 +6,16 @@
 
 // stop
 // The stop message tells the bot to stop calculating.
-void Tetris::stop() { /*this->isStop = true; */}
+void Tetris::stop() { /*this->isStop = true; */ }
 
 // suggest
 // The suggest message tells the bot to suggest some next moves in order of preference.
 // It is only valid to send this message if the bot is calculating.
 // The bot must reply as quickly as possible with a suggestion message containing suggested moves.
-suggestion Tetris::suggest() { 
+suggestion Tetris::suggest() {
     //isStop = true;
-    
-    return { }; 
+
+    return { };
 }
 
 // play
@@ -58,238 +58,7 @@ void Tetris::sugestion(suggestion moves) {}
 
 // evaluates the board and returns the score
 // the evaluation is going to attempt to minimize bumpiness as well as the number of holes
-const int Tetris::eval(const Board& board, const bool ClearedLines, const int nDamageSent) const
-{
-    int score = 0;
-    constexpr auto field_h = VISUALBOARDHEIGHT;
-    constexpr auto field_w = BOARDWIDTH;
-    std::array<int, BOARDWIDTH> min_y = {};
-    struct factor {
-        int hole, h_change, y_factor, h_variance, nDamageSent, noattclear;
-    } constexpr ai_factor = {
-            -50, -5, -10, -10,  40, -30
-    };
 
-    //if ( depth > 2 ) ai_factor = ai_factor_l[2];
-    //else ai_factor = ai_factor_l[depth];
-
-    // get all columns height
-    {
-        auto getMaxColumn = [](const Board& board) -> int {
-            int max = VISUALBOARDHEIGHT - 1;
-            // while the row is not full checking from top to bottom because misamino backwards upside down board representation
-            while (board.rowIsEmpty(max))
-                if (max == 0) { break; }
-                else --max;
-            return max;
-        };
-        const int MaxColumn = getMaxColumn(board);
-
-        // iterate through the rows
-        for (int x = 0; x < field_w; ++x) {
-            // iterate through the columns down to the bottom most row
-            for (int y = MaxColumn; y >= 0; --y) {
-                if (board.board[x][y] != empty) {
-                    min_y[x] = y;
-                    break;
-                }
-            }
-        }
-    }
-
-    //some magic cause why not
-    min_y[BOARDWIDTH - 1] = min_y[BOARDWIDTH - 3];
-
-    // find holes
-    {
-        int hole_score = 0;
-        // for every row
-        for (int x = 0; x < field_w; ++x) {
-            // for every columns max height 
-            for (int y = min_y[x] + 1; y >= 0; --y) {
-                // if there is an empty cell in the row add the ai hole factor to the hole score
-                // which is -50 because holes bad
-                if (board.board[x][y] == empty) {
-                    hole_score += ai_factor.hole;
-                }
-            }
-        }
-        // add the hole score to the score
-        // hole score is negative, so we are punishing the bot for having holes
-        score += hole_score;
-    }
-    // height change
-    {
-        // there is no row to the left of the left most row, or right to the right most
-        // so we use the other side of the row to see its height change
-        // if we used min_y[0] here we would never have any height change for the first row we evaluate
-        int last = min_y[1];
-        for (int x = 0; x < field_w; last = min_y[x], ++x) {
-            int v = min_y[x] - last;
-            int absv = abs(v);
-            score += absv * ai_factor.h_change;
-        }
-    }
-    // variance
-    {
-        int h_variance_score = 0;
-        int AllHeights = 0;
-        {
-            int sum = 0;
-            int sample_cnt = 0;
-            for (int x = 0; x < field_w; ++x) {
-                AllHeights += min_y[x];
-            }
-            {
-                double h = field_h - (double)AllHeights / field_w;
-
-                // field_h -  will make it a higher score when its a lower height
-                // /field_w will make it so if the board is super wide its harder to get a good score because its easier to make less height
-                // exponentially harder to get a good score the wider the board is which makes sense because its exponentially easier the more 
-                // width you have
-
-                score += int(ai_factor.y_factor * h * h / field_h);
-            }
-            for (int x = 0; x < field_w; ++x) {
-                int t = AllHeights - min_y[x] * field_w;
-                if (abs(t) > field_h * field_w / 4) {
-                    if (t > 0) t = field_h * field_w / 4;
-                    else t = -int(field_h * field_w / 4);
-                }
-                sum += t * t;
-                ++sample_cnt;
-            }
-            if (sample_cnt > 0) {
-                h_variance_score = sum * ai_factor.h_variance / (sample_cnt * 100);
-            }
-            score += h_variance_score;
-        }
-    }
-    // clear and attack
-    score += nDamageSent * ai_factor.nDamageSent;
-    if (nDamageSent == 0) {
-        score += ClearedLines * ai_factor.noattclear;
-    }
-    return score;
-}
-
-
-const int Tetris::eval(const BitBoard& board, const bool ClearedLines, const int nDamageSent) const
-{
-    int score = 0;
-    constexpr auto field_h = VISUALBOARDHEIGHT;
-    constexpr auto field_w = BOARDWIDTH;
-    std::array<int, BOARDWIDTH> min_y = {};
-    struct factor {
-        int hole, h_change, y_factor, h_variance, nDamageSent, noattclear;
-    } constexpr ai_factor = {
-            -50, -5, -10, -10,  40, -30
-    };
-
-    //if ( depth > 2 ) ai_factor = ai_factor_l[2];
-    //else ai_factor = ai_factor_l[depth];
-
-    // get all columns height
-    {
-        auto getMaxColumn = [](const BitBoard& board) -> int {
-            int max = VISUALBOARDHEIGHT - 1;
-            // while the row is not full checking from top to bottom because misamino backwards upside down board representation
-            while (board.rowIsEmpty(max))
-                if (max == 0) { break; }
-                else --max;
-            return max;
-        };
-        const int MaxColumn = getMaxColumn(board);
-
-        // iterate through the rows
-        for (int x = 0; x < field_w; ++x) {
-            // iterate through the columns down to the bottom most row
-            for (int y = MaxColumn; y >= 0; --y) {
-                if (board.getBit(x,y) != minotype::isEmpty) {
-                    min_y[x] = y;
-                    break;
-                }
-            }
-        }
-    }
-
-    //some magic cause why not
-    //min_y[BOARDWIDTH - 1] = min_y[BOARDWIDTH - 3];
-
-    // find holes
-    {
-        int hole_score = 0;
-        // for every row
-        for (int x = 0; x < field_w; ++x) {
-            // for every columns max height 
-            for (int y = min_y[x] + 1; y >= 0; --y) {
-                // if there is an empty cell in the row add the ai hole factor to the hole score
-                // which is -50 because holes bad
-                if (board.getBit(x, y) == minotype::isEmpty) {
-                    hole_score += ai_factor.hole;
-                }
-            }
-        }
-        // add the hole score to the score
-        // hole score is negative, so we are punishing the bot for having holes
-        score += hole_score;
-    }
-    // height change
-    {
-        // there is no row to the left of the left most row, or right to the right most
-        // so we use the other side of the row to see its height change
-        // if we used min_y[0] here we would never have any height change for the first row we evaluate
-        int last = min_y[1];
-        for (int x = 0; x < field_w; last = min_y[x], ++x) {
-            int v = min_y[x] - last;
-            int absv = abs(v);
-            if(absv > 1)
-                score += absv * ai_factor.h_change;
-        }
-    }
-    // variance
-    /* {
-        int h_variance_score = 0;
-        int AllHeights = 0;
-        {
-            int sum = 0;
-            int sample_cnt = 0;
-            for (int x = 0; x < field_w; ++x) {
-                AllHeights += min_y[x];
-            }
-            {
-                double h = field_h - (double)AllHeights / field_w;
-
-                // field_h -  will make it a higher score when its a lower height
-                // /field_w will make it so if the board is super wide its harder to get a good score because its easier to make less height
-                // exponentially harder to get a good score the wider the board is which makes sense because its exponentially easier the more 
-                // width you have
-
-                score += int(ai_factor.y_factor * h * h / field_h);
-            }
-            for (int x = 0; x < field_w; ++x) {
-                int t = AllHeights - min_y[x] * field_w;
-                if (abs(t) > field_h * field_w / 4) {
-                    if (t > 0) t = field_h * field_w / 4;
-                    else t = -int(field_h * field_w / 4);
-                }
-                sum += t * t;
-                ++sample_cnt;
-            }
-            if (sample_cnt > 0) {
-                h_variance_score = sum * ai_factor.h_variance / (sample_cnt * 100);
-            }
-            score += h_variance_score;
-        }
-    }*/
-    // clear and attack
-    if (nDamageSent == 0) {
-        score += ClearedLines * ai_factor.noattclear;
-    }
-    else 
-        score += int(nDamageSent * ai_factor.nDamageSent * double((double)nDamageSent / double(ClearedLines) - 0.7));
-    return score;
-}
 /// Evaluates the bumpiness of the playfield.
 ///
 /// The first returned value is the total amount of height change outside of an apparent well. The
@@ -301,7 +70,7 @@ std::pair<int32_t, int32_t> Tetris::bumpiness(Board& board, size_t well)
     int32_t bumpiness_sq = -1;
 
     int32_t prev = well == 0 ? 1 : 0;
-	
+
     std::array<int, BOARDWIDTH>columnHeights{};
     int last = columnHeights[1];
     for (int x = 0; x < BOARDWIDTH; last = columnHeights[x], ++x) {
@@ -324,167 +93,429 @@ std::pair<int32_t, int32_t> Tetris::bumpiness(Board& board, size_t well)
 }
 
 // bot thread
-void Tetris::waitForStart(){
+void Tetris::waitForStart()
+{
+    std::unique_lock<std::mutex> ulk(this->botMux);
+    condVar.wait(ulk, [&] { return startBot.load(); });
+    startBot = false;
+}
+//bot thread
+void Tetris::waitForEnd() {
+    playsProcessed = true;
+    condVar.notify_one();
+    endBot = false;
 }
 // tbp thread
-void Tetris::EventStart(){
-    std::lock_guard lk(botMux);
+void Tetris::EventStart() {
     needPlays = false;
     startBot = true;
     endBot = false;
     playsProcessed = false;
     condVar.notify_one();
 }
-//bot thread
-void Tetris::waitForEnd(){
-    //std::unique_lock<std::mutex> ul(botMux);
-    //condVar.wait(ul, [&]() { return endBot; });
-    endBot = false;
-}
 // tbp thread
-void Tetris::EventEnd(){
+void Tetris::EventEnd() {
+    std::unique_lock<std::mutex> ulk(this->botMux);
     needPlays = true;
-    std::unique_lock<std::mutex> ul(botMux);
-    endBot = true;
-    condVar.wait(ul, [&] { return playsProcessed; });
-	// get plays
-	
-
-	
+    condVar.wait(ulk, [&] { return playsProcessed.load(); });
+    // get plays
     playsProcessed = false;
 }
 
 void Tetris::backGroundThread() {
-    struct PieceNode {
-        PieceNode(BitBoard &board, std::vector<std::vector<inputs>> input, int score): board(board), input(input), score(score) {};
+    struct TetNode {
+        TetNode(const BitBoard& board, const std::vector<std::vector<inputs>> &input, const std::vector<Piece> &queue, const Piece &hold, int score) : board(board), input(input), score(score), queue(queue) {};
         //overload the == operator for the priority queue
-		bool operator==(const PieceNode& other) const {
-			return this->score == other.score;
-		}
-        ~PieceNode() {
-            for(auto & i : children) {
-					delete i;
-			}
+        bool operator==(const TetNode& other) const {
+            return this->score == other.score;
         }
-		//overload the < operator for the priority queue
-        bool operator<(const PieceNode& other) const {
+        ~TetNode() {
+            for (auto& i : children) {
+                delete i;
+            }
+        }
+        //overload the < operator for the priority queue
+        bool operator<(const TetNode& other) const {
             return this->score < other.score;
         }
-        bool operator>(const PieceNode& other) const {
+        bool operator>(const TetNode& other) const {
             return this->score > other.score;
         }
-		
+
         BitBoard board;
+        int16_t score;
         std::vector<std::vector<inputs>> input;
-        int score;
-        std::vector<PieceNode*> children;
+        std::vector<TetNode*> children;
+        std::vector<Piece> queue;
+        Piece hold = Piece(PieceType::empty);
     };
+        auto cmp = [](TetNode*& left, TetNode*& right) {
+            return left->score < right->score;
+        };
 
     while (true) {
-        this->needPlays = false;
-        // wait for the game to start
-        std::unique_lock<std::mutex> ul(botMux);
-        condVar.wait(ul, [&] { return startBot; });
-        startBot = false;
-
-        // start the bot
-        std::priority_queue<PieceNode> pq;
-        //copy the board to a local variable
-        Board board = this->board;
-        BitBoard bitboard = BitBoard::fromBoard(board);
-
-        // copy the queue to a local variable
-        std::vector<Piece> queue = this->queue;
-
-        // copy the hold to a local variable
-        Piece hold = this->hold;
-
-        PieceNode root = PieceNode( bitboard, {}, 0 );
 		
+        BitBoard bitboard;
 		
-        auto cmp = [](PieceNode* left, PieceNode* right) { 
-            bool outcome = left->score < right->score;
-            return outcome; 
-        };
-        std::priority_queue<PieceNode*, std::vector<PieceNode*>, decltype(cmp)> finishedNodes(cmp);
-        std::priority_queue < PieceNode*, std::vector<PieceNode*>, decltype(cmp)> nodes(cmp);
+        std::priority_queue<TetNode*, std::vector<TetNode*>, decltype(cmp)> finishedNodes(cmp);
+        std::priority_queue < TetNode*, std::vector<TetNode*>, decltype(cmp)> nodes(cmp);
+        std::vector<TetNode*> nextNodes; nextNodes.reserve(1485);
+
+        //this->needPlays = false;
+        // wait for the game to start 
+        waitForStart();
+		
+        // grab the data we are going to work with
+        bitboard = BitBoard::fromBoard(board);
+        TetNode root = TetNode(bitboard, {}, this->queue, this->hold, INT16_MIN);
         nodes.push(&root);
-        std::vector<PieceNode*> nextNodes; nextNodes.reserve(128);
-        // forever
+
         while (true) {
-            // for all nodes
-            for (int i = 0; i < 50; ++i) {
+            bool abort = false;
+            // we need to evaluate nodes, but also need to add new nodes to the queue
+            // 50 is random number I picked, feel free to change it
+            for (size_t i = 0; i < 50; i++)
+            {
                 if (nodes.empty()) {
-                    break;
+                    nodes.push(&root);;
                 }
                 auto curNode = nodes.top();
                 nodes.pop();
                 finishedNodes.push(curNode);
-                // create a new piece node
+                if (curNode->queue.empty())
+                    continue;
+                // no hold
+                {
+                    // Possible Piece Placements
+                    auto PPP = moveBoard->find_moves(curNode->board, curNode->queue[0]);
+                    // muliplying by two since the amounnt of children will be about twice the amount of possible placements
+                    // twice because we need to evaluate both the piece placement and the piece placement with a hold
+                    curNode->children.reserve(PPP.size() * 2);
 
-                // Possible Piece Placements
-                auto PPP = moveBoard->find_moves(curNode->board, piece);
-                curNode->children.reserve(PPP.size());
+                    // for every possible Piece placement
+                    for (auto& p : PPP) {
 
-                // for every possible Piece placement
-                for (auto& p : PPP) {
-                    {
-                        if (this->needPlays) {
-                            // implement priority queue, and finished_nodes for less of an overhead for sorting
+
+                        // create a new board
+                        BitBoard newBoard = curNode->board;
+                        // place the piece on the board
+                        newBoard.setPiece(p.piece);
+                        // how many lines are cleared by this move
+                        int nCleared = newBoard.clearLines();
+
+                        // damage dealt
+                        constexpr auto perfectClearDamage = 10;
+                        constexpr auto DAMAGETABLESIZE = 5;
+                        constexpr std::array<const uint_fast8_t, DAMAGETABLESIZE> damageTable = {
+                            0,0,1,2,4
+                        };
+
+                        //if the board is left empty, it is a perfect clear and the damage dealt is 10 + damageTable[ the number of lines cleared ]
+                        int nDamage;
+                        [[unlikely]]
+                        if (newBoard.isBoardEmpty())
+                            nDamage = perfectClearDamage + damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)];
+                        else
+                            nDamage = (damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)] * (2 * (p.spin == Full || p.spin == Mini)));
+
+                        // create and set up the node to go into the tree
+                        auto newqueue = curNode->queue;
+                        newqueue.erase(newqueue.begin());
+                        TetNode* newPN = new TetNode(newBoard, curNode->input, newqueue, curNode->hold, eval(newBoard, nCleared, nDamage));
+
+                        newPN->input.push_back(p.inputs);
+                        // add node to the tree
+                        curNode->children.push_back(newPN);
+                        // add node to the nodes we are going to evaluate
+                        nextNodes.push_back(newPN);
+                        if (this->needPlays && (!finishedNodes.empty())) {
                             auto top = finishedNodes.top();
-                            [[likely]]if(top->input.size() == 0)
+
+                            if (top->input.size() == 0)
                             {
-								finishedNodes.pop();
-								top = finishedNodes.top();
-						    }
+                                if (finishedNodes.top() != &root)
+                                    continue;
+                                else
+                                    finishedNodes.pop();
+
+                                if (!finishedNodes.empty())
+                                {
+                                    top = finishedNodes.top();
+                                }
+                                else
+                                    continue;
+                            }
                             botReturnInput = top->input;
-                            playsProcessed = true;
-                            ul.unlock();
-                            condVar.notify_one();
-							
-                            waitForEnd(); 
+                            abort = true;
+
+                            waitForEnd();
+                            this->needPlays = false;
                             break;
                         }
                     }
+                        if (abort)break;
+                }
+                // hold
+                /* {
+                    auto PPP = moveBoard->find_moves(curNode->board, curNode->hold);
+
+                    // for every possible Piece placement
+                    for (auto& p : PPP) {
+
+
+                        if (this->needPlays) {
+                            this->needPlays = false;
+							abort = true;
+                            auto top = finishedNodes.top();
+
+                            if (top->input.size() == 0)
+                            {
+                                finishedNodes.pop();
+								if(!finishedNodes.empty())
+                                    top = finishedNodes.top();
+                            }
+                            botReturnInput = top->input;
+                            playsProcessed = true;
+                            condVar.notify_one();
+
+                            waitForEnd();
+                            break;
+                        }
+                        // create a new board
+                        BitBoard newBoard = curNode->board;
+                        // place the piece on the board
+                        newBoard.setPiece(p.piece);
+                        // how many lines are cleared by this move
+                        int nCleared = newBoard.clearLines();
+
+                        // damage dealt
+                        constexpr auto perfectClearDamage = 10;
+                        constexpr auto DAMAGETABLESIZE = 5;
+                        constexpr std::array<const uint_fast8_t, DAMAGETABLESIZE> damageTable = {
+                            0,0,1,2,4
+                        };
+
+                        //if the board is left empty, it is a perfect clear and the damage dealt is 10 + damageTable[ the number of lines cleared ]
+                        int nDamage;
+						
+                        if (newBoard.isBoardEmpty())
+                            nDamage = perfectClearDamage + damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)];
+                        else
+                            nDamage = (damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)] * (2 * (p.spin == Full || p.spin == Mini)));
+
+                        // create and set up the node to go into the tree
+						
+                        auto newqueue = curNode->queue;
+                        auto newhold  = curNode->hold;
+                        std::swap(newhold, newqueue[0]);
+						
+                        if(newqueue[0].kind == PieceType::empty)
+                            newqueue.erase(newqueue.begin());
+						
+                        TetNode* newPN = new TetNode(newBoard, curNode->input, newqueue, newhold, eval(newBoard, nCleared, nDamage));
+
+                        // hold specific 
+                        newPN->input.push_back({inputs::Hold});
+
+                        newPN->input.push_back(p.inputs);
+                        // add node to the tree
+                        curNode->children.push_back(newPN);
+                        // add node to the nodes we are going to evaluate
+                        nextNodes.push_back(newPN);
+                    }
+                }*/
+            }
+            if (abort) break;
+			
+            for (auto& n : nextNodes) {
+                nodes.push(n);
+            }
+            nextNodes.clear();
+
+
+            if (this->needPlays && (!finishedNodes.empty())) {
+                auto top = finishedNodes.top();
+
+                if (top->input.size() == 0)
+                {
+                    if (finishedNodes.top() != &root)
+                        continue;
+                    else
+                        finishedNodes.pop();
+
+                    if (!finishedNodes.empty())
+                    {
+                        top = finishedNodes.top();
+                    }
+                    else
+                        continue;
+                }
+                botReturnInput = top->input;
+                abort = true;
+
+                waitForEnd();
+                this->needPlays = false;
+                break;
+            }
+        }
+
+    }
+    // somehow thread safely give the other CPU the moves we found
+
+}
+
+void Tetris::concurrentThread() {
+    struct TetNode {
+        constexpr TetNode(
+            const BitBoard& board, 
+            int16_t score,
+            int16_t linesCleared,
+            int16_t damageSent,
+            const std::vector<std::vector<inputs>>& input, 
+            const std::vector<Piece>& queue, 
+            const Piece& hold
+        )
+            : 
+            board(board), score(score),linesCleared(linesCleared), damageSent(damageSent), input(input), queue(queue) {};
+		
+        //overload the == operator for the priority queue
+        constexpr bool operator==(const TetNode& other) const {
+            return this->score == other.score;
+        }
+        constexpr ~TetNode() {
+            for (auto& i : children) {
+                delete i;
+            }
+        }
+        //overload the < operator for the priority queue
+        constexpr bool operator<(const TetNode& other) const {
+            return this->score < other.score;
+        }
+        constexpr bool operator>(const TetNode& other) const {
+            return this->score > other.score;
+        }
+
+        BitBoard board;
+        int16_t score;
+        int16_t linesCleared;
+        int16_t damageSent;
+        std::vector<std::vector<inputs>> input;
+        std::vector<Piece> queue;
+        std::vector<TetNode*> children;
+        Piece hold = Piece(PieceType::empty);
+    };
+    constexpr auto cmp = [](TetNode*& left, TetNode*& right) {
+        return left->score < right->score;
+    };
+
+    BitBoard bitboard;
+
+    // nodes we have evaluated, even if we havent evaluated the children
+    std::priority_queue<TetNode*, std::vector<TetNode*>, decltype(cmp)> finishedNodes(cmp);
+
+    // nodes we are going to evaluate
+    std::priority_queue < TetNode*, std::vector<TetNode*>, decltype(cmp)> processingNodes(cmp);
+    
+
+    // grab the data we are going to work with
+    bitboard = BitBoard::fromBoard(board);
+    TetNode root = TetNode(bitboard, INT16_MIN, 0,0, {}, this->queue, this->hold);
+    processingNodes.push(&root);
+
+    if(root.board.isCollide(root.queue[0])) {
+        botReturnInput = root.input;
+        return;
+    }
+
+
+    while (true) {
+        // we need to evaluate nodes, but also need to add new nodes to the queue
+        // 50 is random number I picked, feel free to change it
+        for (size_t i = 0; i < 50; i++)
+        {
+            if (processingNodes.empty()) {
+                processingNodes.push(&root);;
+            }
+            auto curNode = processingNodes.top();
+            processingNodes.pop();
+            finishedNodes.push(curNode);
+            if (curNode->queue.empty())
+                continue;
+            // no hold
+            {
+                // Possible Piece Placements
+                auto PPP = moveBoard->find_moves(curNode->board, curNode->queue[0]);
+                // muliplying by two since the amounnt of children will be about twice the amount of possible placements
+                // twice because we need to evaluate both the piece placement and the piece placement with a hold
+                curNode->children.reserve(PPP.size() * 2);
+
+                // for every possible Piece placement
+                for (auto& p : PPP) {
+
                     // create a new board
                     BitBoard newBoard = curNode->board;
                     // place the piece on the board
                     newBoard.setPiece(p.piece);
                     // how many lines are cleared by this move
                     int nCleared = newBoard.clearLines();
-
+                    if (nCleared > 2) {
+                        int i = 0;
+                    }
                     // damage dealt
                     constexpr auto perfectClearDamage = 10;
-                    constexpr int DAMAGETABLESIZE = 5;
-                    const std::array<const uint8_t, DAMAGETABLESIZE> damageTable = {
+                    constexpr auto DAMAGETABLESIZE = 5;
+                    constexpr std::array<const uint_fast8_t, DAMAGETABLESIZE> damageTable = {
                         0,0,1,2,4
                     };
 
                     //if the board is left empty, it is a perfect clear and the damage dealt is 10 + damageTable[ the number of lines cleared ]
                     int nDamage;
+                    [[unlikely]]
                     if (newBoard.isBoardEmpty())
                         nDamage = perfectClearDamage + damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)];
                     else
-                        nDamage = (damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)] * (2 * (p.spin == Full || p.spin == Mini)));
-					
+                        nDamage = (damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)] * (1 << (p.spin == Full || p.spin == Mini)));
+
                     // create and set up the node to go into the tree
-                    PieceNode *newPN = new PieceNode(newBoard, curNode->input,eval(newBoard, nCleared, nDamage));
+                    auto newqueue = curNode->queue;
+                    newqueue.erase(newqueue.begin());
+					
+                    TetNode* newPN = new TetNode(newBoard, eval(newBoard, nCleared, curNode->damageSent + nDamage), curNode->linesCleared + nCleared, curNode->damageSent + nDamage, curNode->input, newqueue, curNode->hold);
+
+                    if (newPN->linesCleared > 2) {
+                    int i = 0;
+                    }
+					
                     newPN->input.push_back(p.inputs);
-					// add node to the tree
+                    // add node to the tree
                     curNode->children.push_back(newPN);
                     // add node to the nodes we are going to evaluate
-					nextNodes.push_back(newPN);
-				}
-                if (this->needPlays) break;
-			}
-            if (this->needPlays) break;
-            for (auto& n : nextNodes) {
-                nodes.push(n);
+                    processingNodes.push(newPN);
+                }
             }
-			nextNodes.clear();
-		}
+            if (this->needPlays) {
+                        auto tippyTop = [&]() {
+                            if(finishedNodes.top() < processingNodes.top())
+								return processingNodes.top();
+                                else
+								return finishedNodes.top();
+                        };
+                        auto top = tippyTop();
+                        if (top->input.size() == 0)
+                        {
+                            if (top == &root) 
+                                continue;
 
+                            finishedNodes.pop();
+                            top = tippyTop();
+                        }
+                        this->botReturnInput = top->input;
+                        this->damage = top->damageSent;
+						this->lines = top->linesCleared;
+
+                        this->needPlays = false;
+                        return;
+                    }
+        }
     }
-		// somehow thread safely give the other CPU the moves we found
-		
 }

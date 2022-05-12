@@ -1,5 +1,5 @@
 #include "BitBoard.hpp"
-
+#include "Tetris.hpp"
 // test if placing an empty piece puts down a mino that isnt empty
 consteval bool boardToBitBoardChecks() {
 	Piece piece = PieceType::empty;
@@ -59,7 +59,18 @@ consteval bool boardToBitBoardChecks3() {
 }
 
 
+consteval bool boardToBitBoardChecks4() {
+	Board b;
+	BitBoard bb;
+	auto linesCleared = 2;
+	auto damage = 3;
+	return Tetris::eval(bb,linesCleared, damage) == Tetris::eval(b, linesCleared, damage);
+}
+
+
+
 
 static_assert(boardToBitBoardChecks());
 static_assert(boardToBitBoardChecks2()); 
 static_assert(boardToBitBoardChecks3());
+static_assert(boardToBitBoardChecks4());

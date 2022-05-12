@@ -23,6 +23,8 @@ public:
                     mino = ColorType::garbage;
             }
     }
+	
+	// clear the entire board back to empty
     constexpr inline void clear() noexcept
     {
         for (auto& width : board)

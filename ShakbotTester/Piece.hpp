@@ -53,7 +53,7 @@ enum class MoveDirection : uint_fast8_t
     number_of_MoveDirections,
 };
 
-inline constexpr std::array<std::array<Coord, MINOSINAPIECE>, (int)PieceType::number_of_PieceTypes> PieceDefintions= {
+constexpr inline std::array<std::array<Coord, MINOSINAPIECE>, (int)PieceType::number_of_PieceTypes> PieceDefintions= {
 
     {
         {{{-1, 0}, {0, 0}, {0, 1}, {1, 1}}},  // S

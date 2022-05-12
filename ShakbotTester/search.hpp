@@ -7,14 +7,21 @@
 #include "Piece.hpp"
 #include <vector>
 #include <memory>
+#include <unordered_map>
+#include <array>
+#include <queue>
 enum class inputs : uint_fast8_t
 {
+	// normal inputs
     CW = 0,
     CCW = 1,
     Left = 2,
     Right = 3,
     SonicDrop = 4,
-    numberOfInputs = 5
+    numberOfInputs = 5,
+    // special inputs that are not part of movegen
+	Hold = 6,
+	
 };
 // this class stores the time taken to get to this cell, and a vector of inputs that resulted getting to this cell
 
@@ -113,15 +120,15 @@ public:
 
 typedef std::array<std::array<std::array<std::array<FullPiece*, LOGICALBOARDHEIGHT + 2>, BOARDWIDTH + 2>, number_of_RotationDirections>, int(spin::numberOfSpins)> boardtype;
 
-
-class inputNode
+//#pragma pack(push, 1)
+struct inputNode
 {
 public:
-    constexpr inputNode() {}
-    constexpr inputNode(const std::vector<inputs> &inputs, uint8_t depth) : history(inputs), depth(depth), inputs({ nullptr ,nullptr ,nullptr ,nullptr ,nullptr }) {
+    constexpr inline inputNode() = default;
+    constexpr inline inputNode(const std::vector<inputs> &inputs, uint8_t depth) : history(inputs), inputs({ nullptr ,nullptr ,nullptr ,nullptr ,nullptr }) {
 
     }
-    constexpr ~inputNode()
+    constexpr inline ~inputNode()
     {
         for (auto& i : inputs)
         {
@@ -129,11 +136,11 @@ public:
                 delete i;
         }
     }
-    constexpr inputNode* getInputNode(const inputs input)const
+    constexpr inline inputNode* getInputNode(const inputs input)const
     {
         return inputs.at((int)input);
     }
-    constexpr void setInputNode(const inputs input, inputNode* node)
+    constexpr inline void setInputNode(const inputs input, inputNode* node)
     {
         if (inputs.at((int)input) != nullptr)
             delete inputs.at((int)input);
@@ -143,14 +150,13 @@ public:
     std::vector<inputs> history{};
 private:
     std::array<inputNode*, int(inputs::numberOfInputs)> inputs{};
-    uint8_t depth{};
 };
 
 // this class will store a board where each cell points to a piece and its movements to get to that cell
 class movementBoard
 {
 public:
-    uint16_t numberOfPopulatedCells = 0;
+    uint_fast16_t numberOfPopulatedCells = 0;
     constexpr inline void addCell(boardtype *&board, std::vector<inputs> &&hist, const int &depth,const Coord &location,const RotationDirection &rot,const spin &spn, const Piece &piece) noexcept {
         if ((*board)[(spn)][(rot)][(location.x+1)][(location.y+1)] != nullptr) {
             numberOfPopulatedCells++;
@@ -323,7 +329,7 @@ public:
         // initial check to see if the peice is colliding with the board
         if (board.isCollide(piece))
         {
-            return{};
+            return {};
         }
 
         boardtype* intermediateBoard;
@@ -335,7 +341,7 @@ public:
         std::vector<inputNode*> nodes = { &root };  nodes.reserve(128);
         std::vector<inputNode*> nextNodes;          nextNodes.reserve(128);
 
-
+		
         // limiting the depth of the search to 15 but can be increased later on if needed
         for (uint_fast16_t depth = 0;; depth++)
         {
@@ -433,18 +439,23 @@ public:
         }
         std::vector<FullPiece> PossiblePiecePlacements;
         PossiblePiecePlacements.reserve(nPiecePlacements);
+		
         for (size_t spn = 0; spn < intermediateBoard->size(); spn++)
         {
             auto& temspn = (*intermediateBoard).data()[spn];
+			
             for (size_t rot = 0; rot < temspn.size(); rot++)
             {
                 auto& tempspnrot = temspn.data()[(rot)];
+				
                 for (size_t x = 0; x < tempspnrot.size(); x++)
                 {
                     auto& tempspnrotx = tempspnrot.data()[(x)];
+					
                     for (size_t y = 0; y < tempspnrotx.size(); y++)
                     {
                         auto& tempspnrotxy = tempspnrotx.data()[(y)];
+
                         if (tempspnrotx[(y)] != nullptr)
                         {
                             if (!board.trySoftDrop(tempspnrotxy->piece))

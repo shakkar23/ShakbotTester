@@ -122,11 +122,11 @@ public:
             m_rows[whichLine].m_row = isEmpty;
 
         // pull down the rest of the lines above the cleared line down
-            for (size_t h = whichLine; h < LOGICALBOARDHEIGHT; h++)
+            for (auto h = whichLine; h < LOGICALBOARDHEIGHT; h++)
             {
                 if (h == (LOGICALBOARDHEIGHT - 1))
                 {
-                    m_rows[LOGICALBOARDHEIGHT - 1].m_row = isEmpty;
+                    m_rows[size_t(LOGICALBOARDHEIGHT) - 1].m_row = isEmpty;
                     break;
                 }
                 else
@@ -167,7 +167,8 @@ public:
 		for (const auto& coord : piece.piecedef)
 		{
 
-			if ((((0 <= (coord.y + piece.y)) && ((coord.y + piece.y) < LOGICALBOARDHEIGHT))) && (((0 <= (coord.x + piece.x)) && ((coord.x + piece.x) < BOARDWIDTH)))) // if inbounds of board
+            // if inbounds of board
+			if ((((0 <= (coord.y + piece.y)) && ((coord.y + piece.y) < LOGICALBOARDHEIGHT))) && (((0 <= (coord.x + piece.x)) && ((coord.x + piece.x) < BOARDWIDTH)))) 
 			{
 				if (getBit(coord.x + piece.x,coord.y + piece.y) == isFull) // is the cell in the board matrix empty
 					return true;
