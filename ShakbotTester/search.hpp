@@ -28,7 +28,7 @@ enum class inputs : uint_fast8_t
 constexpr inline Piece playPiece(const Piece& piece, const std::vector<inputs>& history, const  Board& board, spin& tSpinned) noexcept {
 
     Piece tempPiece = piece;
-    for (const auto& input : history) {
+    for (const auto &input : history) {
         // TODO allow inputs to be done simultaneously
         switch (input)
         {
@@ -65,20 +65,20 @@ constexpr inline Piece playPiece(const Piece& piece, const std::vector<inputs>& 
 
     return tempPiece;
 }
-constexpr inline Piece playPiece(const Piece& piece, const std::vector<inputs>& history, const  BitBoard& board, spin& tSpinned) noexcept {
+constexpr inline Piece playPiece(const Piece piece, const std::vector<inputs>& history, const BitBoard &board, spin& tSpinned) noexcept {
 
     Piece tempPiece = piece;
-    for (const auto& input : history) {
+    for (const auto &input : history) {
         // TODO allow inputs to be done simultaneously
         switch (input)
         {
         case inputs::CW:
             if (board.tryRotate(tempPiece, Right, tSpinned))
-
+                ;
                 break;
         case inputs::CCW:
             if (board.tryRotate(tempPiece, Left, tSpinned))
-
+                ;
                 break;
         case inputs::Left:
             tempPiece.setX(tempPiece.x - 1);
@@ -352,7 +352,7 @@ public:
                 {
                     spin tSpinned = spin::None;
                     //Piece tempPiece = piece;
-                    const inputs& input = (inputs)i;
+                    const inputs input = (inputs)i;
                     // TODO allow inputs to be done simultaneously
                     Piece tempPiece = playPiece(piece, realNode.history, board, tSpinned);
                     switch (input)

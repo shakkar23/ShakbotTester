@@ -13,6 +13,21 @@ public:
 		constexpr row() : m_row(0) {};
 		uint16_t m_row : BOARDWIDTH;
 	};
+    constexpr inline void addGarbage(uint_fast8_t holePlacement, uint_fast8_t linesSent) {
+        // bring up entire board by linesSent line(s)
+        for (int i = 0; i < linesSent; i++)
+            for (int j = LOGICALBOARDHEIGHT - 2; j >= 0; --j)
+                m_rows[j + 1] = m_rows[j];
+			
+
+        // add garbage to the bottom line
+        for (int i = 0; i < linesSent; i++)
+        {
+                m_rows[i].m_row = 0;
+			for (int j = 0; j < holePlacement; j++)
+				m_rows[i].m_row |= (1 << j);
+        }
+    }
 
     // compare two bitboards from the bottom row to the top
     constexpr bool operator==(const BitBoard& rhs) const {
@@ -31,9 +46,9 @@ public:
 	
 	constexpr inline minotype getBit(int x, int y) const {
 		//auto one = (m_rows[y].m_row & (1 << (BOARDWIDTH - x - 1))&1);
-        auto two = (m_rows[y].m_row >> (BOARDWIDTH - x - 1)) & 1;
+        //auto two = (m_rows[y].m_row >> (BOARDWIDTH - x - 1)) & 1;
         //assert(one == two);
-		return minotype(two);
+		return minotype((m_rows[y].m_row >> (BOARDWIDTH - x - 1)) & 1);
 	}
 	
 	constexpr inline void setBit(int row, int col, minotype val) {
@@ -142,6 +157,7 @@ public:
     }
     constexpr inline bool trySoftDrop(Piece& piece) const noexcept {
         piece.setY(piece.y - 1);
+         
         if (isCollide(piece))
         {
             piece.setY(piece.y + 1); // if it collided, go back up where it should be safe
@@ -155,37 +171,53 @@ public:
             return;
         for (auto& coord : piece.piecedef)
         {
-            if ((((0 <= (coord.y + piece.y)) && ((coord.y + piece.y) < LOGICALBOARDHEIGHT))) && (((0 <= (coord.x + piece.x)) && ((coord.x + piece.x) < BOARDWIDTH)))) // if inbounds of board
+            [[likely]] if ((((0 <= (coord.y + piece.y)) && ((coord.y + piece.y) < LOGICALBOARDHEIGHT))) && (((0 <= (coord.x + piece.x)) && ((coord.x + piece.x) < BOARDWIDTH)))) // if inbounds of board
             {
                 setBit((coord.x + piece.x),((coord.y + piece.y)) , isFull);
             }
         }
     }
-	constexpr inline bool isCollide(const Piece& piece) const noexcept
+	constexpr inline bool isCollide(const Piece piece) const noexcept
 	{
+        for (const auto& coord : piece.piecedef)
+        {
+            auto x = coord.x + piece.x;
+            auto y = coord.y + piece.y;
 
-		for (const auto& coord : piece.piecedef)
-		{
+            if (x < 0 || x >= BOARDWIDTH || y < 0 || y >= LOGICALBOARDHEIGHT || getBit(x, y))
+                return true;
+        }
+        return false;
+        
+        /*
+        bool ret[4] = {};
+        for (int i = 0; i < piece.piecedef.size(); i++) {
+            auto x = piece.piecedef[i].x + piece.x;
+            auto y = piece.piecedef[i].y + piece.y;
+            ret[i] = (bool(x < 0) | bool(x >= BOARDWIDTH) | bool(y < 0) | bool(y >= LOGICALBOARDHEIGHT) || getBit(x, y));
+			
+        }
+        return ret[0] + ret[1] + ret[2] + ret[3]*/;
+    }
 
-            // if inbounds of board
-			if ((((0 <= (coord.y + piece.y)) && ((coord.y + piece.y) < LOGICALBOARDHEIGHT))) && (((0 <= (coord.x + piece.x)) && ((coord.x + piece.x) < BOARDWIDTH)))) 
-			{
-				if (getBit(coord.x + piece.x,coord.y + piece.y) == isFull) // is the cell in the board matrix empty
-					return true;
-			}
 
-			if (((coord.x + piece.x) < 0) || ((coord.x + piece.x) >= BOARDWIDTH)) // cant be out of bounds on either direction
+            /* [[likely]] if (((0 <= y) and (y < LOGICALBOARDHEIGHT)) and ((0 <= x) and (x < BOARDWIDTH))) // if inbounds of board
+            {
+                if (getBit(x, y) == isFull) // is the cell in the board matrix empty
+                    return true;
+            } 
+            // cant be out of bounds on either  horizontal direction
+            else [[unlikely]]if ((x < 0) || (x >= BOARDWIDTH)) 
 			{
 				return true;
 			}
 
-			if ((coord.y + piece.y) < 0) // can be above, but not below the board
+            // can be above, but not below the board
+			else [[unlikely]] if (y < 0) 
 			{
 				return true;
-			}
-		}
-		return false;
-	}
+			}*/
+
     constexpr inline bool tryRotate(Piece& piece, TurnDirection direction, spin& Tspinned) const noexcept
     {
         constexpr auto incrRotClockWise = [&](RotationDirection& spin) noexcept
@@ -208,15 +240,15 @@ public:
                 break;
             }
         };
-        constexpr auto TspinDetection = [](const Piece& piece, const BitBoard& board, spin& Tspinned, RotationDirection dir, int kick)noexcept
+        constexpr auto TspinDetection = [](const Piece& piece, const BitBoard *board, spin& Tspinned, RotationDirection dir, int kick)noexcept
         {
-            constexpr auto isntEmpty = [](int x, int y, const BitBoard& board)noexcept
+            constexpr auto isntEmpty = [](int x, int y, const BitBoard *board)noexcept
             {
                 if ((((0 <= y) && (y < LOGICALBOARDHEIGHT))) && (((0 <= x) && (x < BOARDWIDTH)))) // if inbounds of board
                 {
                     // if (piece.piecedef[y][x] != empty) // is the cell empty in the piece matrix is empty
 
-                    return (board.getBit(x,y) == isFull); // is the cell in the board matrix empty
+                    return (board->getBit(x,y) == isFull); // is the cell in the board matrix empty
                 }
 
                 if ((x < 0) || (x >= BOARDWIDTH)) // cant be out of bounds on either direction
@@ -230,6 +262,8 @@ public:
                 }
                 return false;
             };
+			
+            [[unlikely]]
             if (piece.kind == PieceType::T)
             {
                 constexpr std::array < std::array<Coord, 4>, 4 > directionToCords = { {
@@ -316,12 +350,12 @@ public:
 
             auto* offsetData = &JLSTZPieceOffsetData[piece.spin];
             auto* nextOffset = &JLSTZPieceOffsetData[nextDir];
-            if (piece.kind == PieceType::I)
+            [[unlikely]] if (piece.kind == PieceType::I)
             {
                 offsetData = &IPieceOffsetData[piece.spin];
                 nextOffset = &IPieceOffsetData[nextDir];
             }
-            else if (piece.kind == PieceType::O)
+            else [[unlikely]] if (piece.kind == PieceType::O)
             {
                 offsetData = &OPieceOffsetData[piece.spin];
                 nextOffset = &OPieceOffsetData[nextDir];
@@ -333,10 +367,10 @@ public:
                 piece.setX(x + (*offsetData)[i].x - (*nextOffset)[i].x);
                 piece.setY(y + (*offsetData)[i].y - (*nextOffset)[i].y);
 
-                if (!this->isCollide(piece))
+                if (!isCollide(piece))
                 {
                     piece.spin = nextDir;
-                    TspinDetection(piece, (*this), Tspinned, nextDir, i);
+                    TspinDetection(piece, this, Tspinned, nextDir, i);
                     return true;
                 }
             }
@@ -366,7 +400,7 @@ public:
                 if (!this->isCollide(piece))
                 {
                     piece.spin = nextDir;
-                    TspinDetection(piece, (*this), Tspinned, nextDir, i);
+                    TspinDetection(piece, this, Tspinned, nextDir, i);
                     return true;
                 }
             }
@@ -383,7 +417,7 @@ public:
         {
             piece.rotateCW();
         }
-        else if (direction == oneEighty)
+        else [[unlikely]] if (direction == oneEighty)
         {
             piece.rotate180();
         }

@@ -61,9 +61,15 @@ consteval bool boardToBitBoardChecks3() {
 
 consteval bool boardToBitBoardChecks4() {
 	Board b;
-	BitBoard bb;
+
+	// place random pieces
+	for (int i = 0; i < 10; i++) {
+		Piece p = Piece(PieceType::T, i, i * 6 % 10, RotationDirection(i % 4));
+		b.setPiece(p);
+	}
+	BitBoard bb = BitBoard::fromBoard(b);
 	auto linesCleared = 2;
-	auto damage = 3;
+	auto damage = 1;
 	return Tetris::eval(bb,linesCleared, damage) == Tetris::eval(b, linesCleared, damage);
 }
 

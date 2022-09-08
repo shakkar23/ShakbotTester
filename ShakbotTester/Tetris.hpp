@@ -20,19 +20,17 @@ class Tetris
 public:
     Tetris() {
         moveBoard = std::make_unique<movementBoard>();
-        bot = std::jthread(std::function<void()>([&]() { backGroundThread(); }));
     }
     std::unique_ptr<movementBoard> moveBoard;
-    Board board = Board();
+    Board board;
     Piece hold = Piece(PieceType::empty);
     std::vector<Piece> queue;
-    std::vector<std::vector<inputs>> botReturnInput;
+    std::vector<inputs> botReturnInput;
     uint16_t damage;
     uint16_t lines;
     Piece piece = Piece(PieceType::L);
-    std::atomic_int32_t combo;
-    std::atomic_bool startBot = false;
-    std::atomic_bool playsProcessed = false;
+    uint32_t combo;
+    std::atomic_bool needSuggest = false;
     std::atomic_bool needPlays = false;
     std::atomic_bool endBot = true;
 	
@@ -105,16 +103,17 @@ public:
         int score = 0;
         constexpr auto field_h = VISUALBOARDHEIGHT;
         constexpr auto field_w = BOARDWIDTH;
-        std::array<int, BOARDWIDTH> min_y = {};
+        std::array<int, BOARDWIDTH> min_y = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
         struct factor {
-            int hole, h_change, y_factor, h_variance, nDamageSent, noattclear;
+            int8_t hole, h_change, y_factor, h_variance, nDamageSent, noattclear, parity;
         } constexpr ai_factor = {
-                .hole = -60, 
-                .h_change = -5, 
-                .y_factor = -10, 
-                .h_variance = -10,  
-                .nDamageSent = 40, 
-                .noattclear = -30
+                .hole = -5,
+                .h_change = -1,
+                .y_factor = -1,
+                .h_variance = -1,
+                .nDamageSent = 2,
+                .noattclear = -2,
+                .parity = -2,
         };
 
         //if ( depth > 2 ) ai_factor = ai_factor_l[2];
@@ -144,20 +143,17 @@ public:
             }
         }
 
-        //some magic cause why not
-        //min_y[BOARDWIDTH - 1] = min_y[BOARDWIDTH - 3];
-
-        // find holes
+        // holes
         {
             int hole_score = 0;
             // for every row
             for (int x = 0; x < field_w; ++x) {
                 // for every columns max height 
-                for (int y = min_y[x] + 1; y >= 0; --y) {
+                for (int y = min_y[x]; y >= 0; --y) {
                     // if there is an empty cell in the row add the ai hole factor to the hole score
                     // which is -50 because holes bad
                     if (board.board[x][y] == empty) {
-                        hole_score += ai_factor.hole;
+                        hole_score += ai_factor.hole * (min_y[x] - y);
                     }
                 }
             }
@@ -170,22 +166,20 @@ public:
             // there is no row to the left of the left most row, or right to the right most
             // so we use the other side of the row to see its height change
             // if we used min_y[0] here we would never have any height change for the first row we evaluate
-            int last = min_y[1];
-            for (int x = 0; x < field_w; last = min_y[x], ++x) {
-                int v = min_y[x] - last;
-                int absv = abs(v);
-                score += absv * ai_factor.h_change;
+            int last = min_y[0];
+            for (int x = 1; x < field_w; last = min_y[x], ++x) {
+                score += abs(min_y[x] - last) * ai_factor.h_change;
             }
         }
         // variance
-        /* {
+        {
             int h_variance_score = 0;
             int AllHeights = 0;
             {
                 int sum = 0;
                 int sample_cnt = 0;
                 for (int x = 0; x < field_w; ++x) {
-                    AllHeights += min_y[x];
+                    AllHeights += min_y[x] > 0 ? min_y[x] : 0;
                 }
                 {
                     double h = field_h - (double)AllHeights / field_w;
@@ -211,8 +205,27 @@ public:
                 }
                 score += h_variance_score;
             }
-        }*/
+        }
         // clear and attack
+
+		// parity
+        {
+			int oddParity = 0;
+			int evenParity = 0;
+            for(int x = 0; x < field_w; ++x) {
+				for(int y = 0; y < field_h; ++y) {
+					if((x+y) & 1)
+						oddParity += board.board[x][y] == empty ? 0 : 1;
+					else
+						evenParity += board.board[x][y] == empty ? 0 : 1;
+				}
+			}
+			score += abs(oddParity - evenParity) * ai_factor.parity;
+			
+        }
+		
+		
+
         score += int(nDamageSent * ai_factor.nDamageSent * double(nDamageSent) / double(ClearedLines - 0.7));
 
         if (nDamageSent == 0) {
@@ -227,16 +240,17 @@ public:
         int score = 0;
         constexpr auto field_h = VISUALBOARDHEIGHT;
         constexpr auto field_w = BOARDWIDTH;
-        std::array<int, BOARDWIDTH> min_y = {};
+        std::array<int, BOARDWIDTH> min_y = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
         struct factor {
-            int hole, h_change, y_factor, h_variance, nDamageSent, noattclear;
+            int8_t hole, h_change, y_factor, h_variance, nDamageSent, noattclear, parity;
         } constexpr ai_factor = {
-                .hole = -60,
-                .h_change = -5,
-                .y_factor = -10,
-                .h_variance = -10,
-                .nDamageSent = 40,
-                .noattclear = -30
+                .hole = -5,
+                .h_change = -1,
+                .y_factor = -1,
+                .h_variance = -1,
+                .nDamageSent = 2,
+                .noattclear = -2,
+                .parity = -2,
         };
 
         //if ( depth > 2 ) ai_factor = ai_factor_l[2];
@@ -266,20 +280,17 @@ public:
             }
         }
 
-        //some magic cause why not
-        //min_y[BOARDWIDTH - 1] = min_y[BOARDWIDTH - 3];
-
-        // find holes
+        // holes
         {
             int hole_score = 0;
             // for every row
             for (int x = 0; x < field_w; ++x) {
                 // for every columns max height 
-                for (int y = min_y[x] + 1; y >= 0; --y) {
+                for (int y = min_y[x]; y >= 0; --y) {
                     // if there is an empty cell in the row add the ai hole factor to the hole score
                     // which is -50 because holes bad
                     if (board.getBit(x, y) == minotype::isEmpty) {
-                        hole_score += ai_factor.hole;
+                        hole_score += ai_factor.hole * (min_y[x] - y);
                     }
                 }
             }
@@ -292,24 +303,23 @@ public:
             // there is no row to the left of the left most row, or right to the right most
             // so we use the other side of the row to see its height change
             // if we used min_y[0] here we would never have any height change for the first row we evaluate
-            int last = min_y[1];
-            for (int x = 0; x < field_w; last = min_y[x], ++x) {
-                int v = min_y[x] - last;
-                int absv = abs(v);
-                score += absv * ai_factor.h_change;
+            int last = min_y[0];
+            for (int x = 1; x < field_w; last = min_y[x], ++x) {
+                score += abs(min_y[x] - last) * ai_factor.h_change;
             }
         }
         // variance
-        /* {
+        {
             int h_variance_score = 0;
             int AllHeights = 0;
             {
                 int sum = 0;
                 int sample_cnt = 0;
                 for (int x = 0; x < field_w; ++x) {
-                    AllHeights += min_y[x];
+                    AllHeights += min_y[x] > 0 ? min_y[x] : 0;
                 }
                 {
+                    //height average
                     double h = field_h - (double)AllHeights / field_w;
 
                     // field_h -  will make it a higher score when its a lower height
@@ -333,7 +343,30 @@ public:
                 }
                 score += h_variance_score;
             }
-        }*/
+        }
+		//parity
+        {
+            uint16_t evenParity = 0b1010101010;
+            uint16_t oddParity = 0b0101010101;
+			
+            uint16_t totaloddParity = 0;
+			uint16_t totalevenParity = 0;
+            for (int y = 0; y < field_h; ++y) {
+                const uint_fast16_t row = board.getRow(y).m_row;
+                const uint_fast16_t boardParityEven = (row & evenParity);
+                const uint_fast16_t boardParityOdd = (row & oddParity);
+                // count bits set in boardParity even, and odd
+                const auto boardParityEvenCount = std::popcount(boardParityEven);
+                const auto boardParityOddCount = std::popcount(boardParityOdd);
+                				
+				// add the parity score
+				totalevenParity += boardParityEvenCount;
+				totaloddParity += boardParityOddCount;
+					std::swap(evenParity, oddParity);
+            }
+				score += abs(totaloddParity - totalevenParity) * ai_factor.parity;
+        }
+
         // clear and attack
         score += int(nDamageSent * ai_factor.nDamageSent * double(nDamageSent) / double(ClearedLines - 0.7));
         if (nDamageSent == 0) {
@@ -342,17 +375,9 @@ public:
         return score;
     }
 
-
-    void waitForStart();
-    void EventStart();
-    void waitForEnd();
-    void EventEnd();
-    void backGroundThread();
     void concurrentThread();
-    std::jthread bot;
 	
     // signal this for the bot to wake back up
-    std::condition_variable condVar;
 	std::mutex botMux;
     
 };

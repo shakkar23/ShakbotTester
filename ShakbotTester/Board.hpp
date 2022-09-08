@@ -43,13 +43,7 @@ public:
             for (uint_fast16_t w = 0; w < BOARDWIDTH; w++)
             {
 
-                bool b = (h & 1);
-                if (b)
-                    if (board.at(w).at(h) == empty)
-                        break;
-                    else
-                        ;
-                else if (board.at(w).at(h) == empty)
+                if (board.at(w).at(h) == empty)
                     break;
                 if (w == BOARDWIDTH - 1)
                 {
@@ -87,6 +81,27 @@ public:
                 {
                     board.at(w).at(h) = board.at(w).at((h + 1));
                 }
+            }
+        }
+    }
+    constexpr inline void addGarbage(uint_fast8_t holePlacement, uint_fast8_t linesSent) {
+        // bring up entire board by linesSent line(s)
+        for (int i = 0; i < linesSent; i++)
+            for (auto &column : board) {
+                for(long long i = board.at(0).size() - 2; i >= 0; --i){
+		    		column[i+1] = column[i];
+		    	}
+            }
+		
+		// add garbage to the bottom line
+        for (int i = 0; i < linesSent; i++)
+        {
+			for (int o = 0; o < board.size(); o++){
+                auto& column = board.at(o);
+				if(o != holePlacement)
+			        column[i] = ColorType::garbage;
+                else
+				    column[i] = ColorType::empty;
             }
         }
     }
