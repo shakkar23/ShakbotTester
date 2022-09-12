@@ -399,7 +399,7 @@ public:
 				using namespace std::chrono_literals;
 				auto start = std::chrono::high_resolution_clock::now();
 
-				std::chrono::seconds timespan(30);
+				std::chrono::seconds timespan(5);
 
 				std::jthread worker([&]() {tet.concurrentThread(); });
 
@@ -435,7 +435,7 @@ public:
 };
 
 int main() {
-
+	const bool shouldBeTrue = searchConstantEvalCheck();
 	Visualizer pixelGameEngine;
 
 	if (pixelGameEngine.Construct(SCREENWIDTH, SCREENHEIGHT, 4, 4))

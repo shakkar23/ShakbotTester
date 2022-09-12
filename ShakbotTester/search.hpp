@@ -73,13 +73,11 @@ constexpr inline Piece playPiece(const Piece piece, const std::vector<inputs>& h
         switch (input)
         {
         case inputs::CW:
-            if (board.tryRotate(tempPiece, Right, tSpinned))
-                ;
-                break;
+            board.tryRotate(tempPiece, Right, tSpinned);
+            break;
         case inputs::CCW:
-            if (board.tryRotate(tempPiece, Left, tSpinned))
-                ;
-                break;
+            board.tryRotate(tempPiece, Left, tSpinned);
+            break;
         case inputs::Left:
             tempPiece.setX(tempPiece.x - 1);
             if (board.isCollide(tempPiece))
@@ -470,3 +468,12 @@ public:
         return PossiblePiecePlacements;
     }
 };
+consteval inline bool searchConstantEvalCheck() {
+    {
+        BitBoard board;
+        Piece piece = PieceType::T;
+        movementBoard MB;
+        auto input = MB.find_moves(board, piece);
+        return input.at(0).inputs.at(0) == inputs::Left;
+    }
+}

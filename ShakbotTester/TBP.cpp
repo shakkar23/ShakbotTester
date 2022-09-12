@@ -115,7 +115,10 @@ void Tetris::concurrentThread() {
         }
         constexpr ~TetNode() {
             for (auto& i : children) {
-                delete i;
+                if (i) {
+                    delete i;
+                    i = nullptr;
+                }
             }
         }
         //overload the < operator for the priority queue
@@ -283,6 +286,7 @@ void Tetris::concurrentThread() {
             }
 			
             if (this->needPlays) {
+
                 auto tippyTop = [&]() {
                     return
                         finishedNodes.top()->score < processingNodes.top()->score ?
@@ -290,7 +294,9 @@ void Tetris::concurrentThread() {
                         :
                         finishedNodes.top();
                 };
+
                 auto top = tippyTop();
+
                 if (top->input.size() == 0)
                 {
                     if (top == &root)
@@ -299,6 +305,7 @@ void Tetris::concurrentThread() {
                     finishedNodes.pop();
                     top = tippyTop();
                 }
+
                 this->botReturnInput = top->input[0];
                 this->damage = top->damageSent;
                 this->lines = top->linesCleared;
