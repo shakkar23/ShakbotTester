@@ -12,7 +12,7 @@ constexpr auto SCREENWIDTH = BOARDWIDTH * 10;
 
 class Visualizer : public olc::PixelGameEngine {
 	Tetris tet;
-	
+	std::vector<FullPiece> moves;
 	int BoardScreenWidth() {
 		return boardScreenWidth;
 	}
@@ -292,6 +292,7 @@ public:
 
 	bool OnUserCreate() override
 	{
+		moves = tet.moveBoard->find_moves(tet.board, tet.piece);
 		sAppName = "Shot";
 		boardScreenWidth = int(ScreenWidth() * 0.9);
 		boardScreenHeight = int(ScreenHeight() * 0.9);
@@ -341,15 +342,26 @@ public:
 			}
 		}
 		if (GetKey(olc::RIGHT).bPressed) {
+			moveSelected += moves.size();
 			moveSelected++;
+			moveSelected %= moves.size();
+
+			renderBoard(tet.board);
+			renderPiece(moves[moveSelected].piece);
+			renderInt(moveSelected);
 		}
 		else if (GetKey(olc::LEFT).bPressed) {
+			moveSelected += moves.size();
 			moveSelected--;
+			moveSelected %= moves.size();
+
+			renderBoard(tet.board);
+			renderPiece(moves[moveSelected].piece);
+			renderInt(moveSelected);
 		}
 		else if (GetKey(olc::SHIFT).bPressed) {
 		}
 		else if (GetKey(olc::ENTER).bPressed) {
-			
 		}
 
 		if (GetKey(olc::K1).bPressed)

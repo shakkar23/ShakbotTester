@@ -99,7 +99,29 @@ class Piece
 public:
     constexpr bool operator ==(const Piece& other) const noexcept {
         /* Can't use default because then piecedef would be included. */
-        return std::tie(this->x, this->y, this->kind, this->spin) == std::tie(other.x, other.y, other.kind, other.spin);
+        return std::tie(this->x, this->y, this->kind, this->spin) ==
+               std::tie(other.x, other.y, other.kind, other.spin);
+    }
+
+    constexpr bool operator <(const Piece& other) const noexcept {
+
+        uint16_t thisPiece{};
+        // has 4 states
+        thisPiece |= static_cast<uint16_t>(spin) << 0;
+        // has a range of 0 - 40
+        thisPiece |= static_cast<uint16_t>(y) << 2;
+        // has a range of 0 to 10
+        thisPiece |= static_cast<uint16_t>(x) << 8;
+
+        uint16_t otherPiece{};
+        // has 4 states
+        otherPiece |= static_cast<uint16_t>(other.spin) << 0;
+        // has a range of 0 - 40
+        otherPiece |= static_cast<uint16_t>(other.y) << 2;
+        // has a range of 0 to 10
+        otherPiece |= static_cast<uint16_t>(other.x) << 8;
+        /* Can't use default because then piecedef would be included. */
+        return thisPiece < otherPiece;
     }
     constexpr inline Piece(PieceType kind, int_fast8_t x = 4, int_fast8_t y = VISUALBOARDHEIGHT - 2,
         RotationDirection spin = RotationDirection::North)noexcept
