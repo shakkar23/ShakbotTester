@@ -399,14 +399,6 @@ public:
         return true;
 
     }
-    constexpr inline bool rowIsEmpty(const int row) const {
-        for(const auto & column: board)
-		{
-			if(column[row] != empty)
-				return false;
-		}
-		return true;
-			
-    }
+
     std::array<std::array<ColorType, LOGICALBOARDHEIGHT>, BOARDWIDTH> board{};
 };

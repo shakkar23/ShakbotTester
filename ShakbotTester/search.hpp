@@ -37,12 +37,12 @@ constexpr inline Piece playPiece(const Piece& piece, const std::vector<inputs>& 
         {
         case inputs::CW:
             if (board.tryRotate(tempPiece, Right, tSpinned))
-                
-            break;
+
+                break;
         case inputs::CCW:
             if (board.tryRotate(tempPiece, Left, tSpinned))
-                
-            break;
+
+                break;
         case inputs::Left:
             tempPiece.setX(tempPiece.x - 1);
             if (board.isCollide(tempPiece))
@@ -103,212 +103,252 @@ constexpr inline Piece playPiece(const Piece piece, const std::vector<inputs>& h
 
     }
 
+
+    return tempPiece;
+}
+
+
 class FullPiece {
 public:
-    FullPiece(std::vector<inputs> &inputs, Piece &piece, spin spin) noexcept : piece(piece), spin(spin) {
+    constexpr FullPiece(std::vector<inputs> &inputs, Piece piece, spin &spin) noexcept 
+    : piece(piece), spin(spin) {
         std::swap(inputs, this->inputs);
     }
+
+    constexpr FullPiece(std::vector<inputs> &&inputs,const Piece& piece,const spin &spin) noexcept 
+        : piece(piece), spin(spin), inputs(std::move(inputs)) {}
+
+    constexpr bool operator==(const FullPiece& other) {
+        return piece == other.piece && spin == other.spin;
+    }
+    constexpr bool operator<(const FullPiece& other) {
+        return piece < other.piece;
+    }
+
     std::vector<inputs> inputs;
     Piece piece;
     spin spin;
 };
+constexpr uint16_t hash(const FullPiece& piece) {
+        uint16_t hash{};
+        // has 4 states
+        hash |= static_cast<uint16_t>(piece.piece.spin) << 2;
+        // has a range of 0 to 10
+        hash |= static_cast<uint16_t>(piece.piece.x)    << 4;
+        // has a range of 0 - 40
+        hash |= static_cast<uint16_t>(piece.piece.y)    << 8;
+        // has 3 states
+        hash |= static_cast<uint16_t>(piece.spin)       << 2;
+
+        return hash;
+    }
 
 
-class inputNode
+struct inputNode
 {
 public:
-    constexpr inputNode() {}
-    constexpr inputNode(std::vector<inputs> inputs, uint8_t depth) : history(std::move(inputs)), depth(depth), inputs({ nullptr ,nullptr ,nullptr ,nullptr ,nullptr }) {
+    constexpr inline inputNode(FullPiece fullPiece) : pieceData(fullPiece), children({ nullptr ,nullptr ,nullptr ,nullptr ,nullptr }) {
 
     }
-    constexpr ~inputNode()
+    constexpr inline ~inputNode()
     {
-        for (auto& i : inputs)
+        for (auto& i : children)
         {
             if (i != nullptr)
                 delete i;
         }
     }
-    constexpr inputNode* getInputNode(const inputs input)const
+    constexpr inline inputNode* getInputNode(const inputs input)const
     {
-        return inputs.at((int)input);
+        return children.at((int)input);
     }
-    constexpr void setInputNode(const inputs input, inputNode* node)
+    constexpr inline void setInputNode(const inputs input, inputNode* node)
     {
-        if (inputs.at((int)input) != nullptr)
-            delete inputs.at((int)input);
-        inputs.at((int)input) = node;
+        if (children.at((int)input) != nullptr)
+            delete children.at((int)input);
+        children.at((int)input) = node;
     }
 
-    std::vector<inputs> history{};
-private:
-    std::array<inputNode*, int(inputs::numberOfInputs)> inputs{};
-    uint8_t depth{};
+    FullPiece pieceData;
+    std::array<inputNode*, int(inputs::numberOfInputs)> children{};
 };
 
 // this class will store a board where each cell points to a piece and its movements to get to that cell
 class movementBoard
 {
 public:
-    uint16_t numberOfPopulatedCells = 0;
-    constexpr inline void addCell(boardtype &board, Cell* cell, Coord location, RotationDirection rot, spin spn = spin::None) noexcept {
-        if (board.at(spn).at(rot).at(location.x).at(location.y) != nullptr) {
-            numberOfPopulatedCells++;
-        }
-        board.at(spn).at(rot).at(location.x).at(location.y) = std::move(cell);
-    }
-	constexpr inline void clearBoard() {
-        numberOfPopulatedCells = 0;
-        pieces.clear();
-	}
     // needed padding as the X coordinate of a placed piece can be negative 1
     // padding the board on all 4 sides by one
-    std::vector<FullPiece> pieces{};
 	constexpr void DijkstraFaithful(const Board& board, const Piece& piece);
     private:
-
-        constexpr inline Cell* historyToCell(std::vector<inputs>& hist, int time)
-        {
-            return new Cell(time, hist);
-        }
+        
 public:
-    constexpr inline void find_moves(const Board& board, const Piece& piece)noexcept
+    constexpr inline std::vector<FullPiece> find_moves(const Board& board, const Piece& piece) const noexcept
     {
 
-        boardtype* intermediateBoard;
-        intermediateBoard = new boardtype();
-
-        std::vector<FullPiece> moves;
-
-        inputNode root;
-        std::vector<inputNode*> nodes = { &root };
-        std::vector<inputNode*> nextNodes;
-
+        //clearBoard();
         // initial check to see if the peice is colliding with the board
         if (board.isCollide(piece))
         {
-            return;
+            return{};
         }
 
-        // limiting the depth of the search to 15 but can be increased later on if needed
+        std::vector<FullPiece> moves;
+
+        inputNode root = inputNode(FullPiece({}, piece, spin::None));
+        std::vector<inputNode*> nodes = { &root };
+        nodes.reserve(127);
+
+        std::vector<inputNode*> nextNodes;
+        nextNodes.reserve(127);
+
+        std::vector<uint16_t> packedPieces;
+        packedPieces.reserve(127);
+
+
+        // limiting the depth of the search to inf but can be increased later on if needed
         for (uint_fast16_t depth = 0;; depth++)
         {
-            size_t sizeOfNodes = nodes.size();
             for (auto& node : nodes)
             {
-                {
-                    std::vector<inputs> e = { inputs::Left, inputs::Left, inputs::Left };
-                    if (e == node->history)
-                        depth = depth;
-                }
+                auto& curNode = *node;
                 for (size_t i = 0; i < int(inputs::numberOfInputs); i++)
                 {
+                    std::vector<inputs> newHist;
+                    newHist.reserve(curNode.pieceData.inputs.size() + 1);
+                    newHist = curNode.pieceData.inputs;
+                    newHist.push_back((inputs)i);
+
                     spin tSpinned = spin::None;
-                    //Piece tempPiece = piece;
-                    const inputs input = (inputs)i;
+
+                    const inputs& input = (inputs)i;
                     // TODO allow inputs to be done simultaneously
-                    Piece tempPiece = playPiece(piece, node->history, board, tSpinned);
-                    switch (input)
-                    {
-                    case inputs::CW:
-                        if (!board.tryRotate(tempPiece, Right, tSpinned))
-                            continue;
-                        break;
-                    case inputs::CCW:
-                        if (!board.tryRotate(tempPiece, Left, tSpinned))
-                            continue;
-                        break;
-                    case inputs::Left:
-                        tempPiece.setX(tempPiece.x - 1);
-                        if (board.isCollide(tempPiece))
-                        {
-                            tempPiece.setX(tempPiece.x + 1); // failed, go back
-                            continue;
-                        }
-                        break;
-                    case inputs::Right:
-                        tempPiece.setX(tempPiece.x + 1);
-                        if (board.isCollide(tempPiece))
-                        {
-                            tempPiece.setX(tempPiece.x - 1); // failed, go back
-                            continue;
-                        }
-                        break;
-                    case inputs::SonicDrop:
-                    default:
-                        board.sonicDrop(tempPiece);
-                        break;
-                    }
+                    const FullPiece newFullPiece = FullPiece(newHist, playPiece(piece, newHist, board, tSpinned), tSpinned);
 
-                    auto addcell = [](inputNode*& node, std::vector<inputNode*>& nextNodes, const inputs& input,
-                        const uint_fast16_t& depth, const Piece& tempPiece, movementBoard* self, spin spinned, boardtype& board) {
+                    auto tempPieceHash = hash(newFullPiece);
+                    auto iter = std::find(packedPieces.begin(), packedPieces.end(), tempPieceHash);
 
-                            std::vector<inputs> hist;
-                            hist.reserve(node->history.size() + 1);
-                            // populate the history 
-                            hist = node->history;
-                            hist.push_back(input);
+                    // havent found the hash, new state!
+                    if (iter == packedPieces.end()) {
+                        // add the new hash to the state
+                        packedPieces.push_back(tempPieceHash);
+                        
+                        moves.push_back(newFullPiece);
 
-                            inputNode* currentNode = new inputNode(hist, depth);
-                            self->addCell(board, self->historyToCell(hist, depth), { int_fast8_t(tempPiece.x + int_fast8_t(1)), int_fast8_t(tempPiece.y + int_fast8_t(1)) }, tempPiece.spin, spinned);
+                        curNode.children[i] =  new inputNode(newFullPiece);
 
-                            //add populated node to the next nodes to evaluate
-                            nextNodes.push_back(currentNode);
-
-                            // make sure to set the pointer to a node for later on, it will ensure the data gets deleted 
-                            node->setInputNode(input, currentNode);
-                    };
-
-
-                    // if the piece is in a new position add to the movementBoard, if its floating add it to the cells we have visited
-                    if (intermediateBoard->at(tSpinned).at(tempPiece.spin).at(tempPiece.x + 1).at(tempPiece.y + 1) == nullptr)
-                    {
-                        addcell(node, nextNodes, input, depth, tempPiece, this, tSpinned, *intermediateBoard);
-                    }
-                    else
-                    {
-                        //if the cell is already populated 
-                        // and has sonic drop as its last input, discard it
-                        if (intermediateBoard->at(tSpinned).at(tempPiece.spin).at(tempPiece.x + 1).at(tempPiece.y + 1)->inputs.back() == inputs::SonicDrop)
-                            continue;
-
-                        // if the cell is already populated
-                        // and the the two histories are the same replace the cell with itself
-                        if (node->history == intermediateBoard->at(tSpinned).at(tempPiece.spin).at(tempPiece.x + 1).at(tempPiece.y + 1)->inputs)
-                        {
-                            addcell(node, nextNodes, input, depth, tempPiece, this, tSpinned, *intermediateBoard);
-
-                        }
+                        nextNodes.push_back(curNode.children[i]);
                     }
                 }
             }
-            nodes = nextNodes;
+            std::swap(nextNodes, nodes);
             nextNodes.clear();
             if (nodes.size() == 0)
                 break;
         }
-        pieces.reserve(this->numberOfPopulatedCells);
-        for (size_t spn = 0; spn < intermediateBoard->size(); spn++)
-        {
-            for (size_t rot = 0; rot < intermediateBoard->at(spn).size(); rot++)
+        
+        for (auto &move : moves) {
+            if (board.trySoftDrop(move.piece))
             {
-                for (size_t x = 0; x < intermediateBoard->at(spn).at(rot).size(); x++)
+                move.spin = spin::None;
+                board.sonicDrop(move.piece);
+            }
+        }
+                
+        std::sort(moves.begin(), moves.end());
+        moves.erase(
+            std::unique(moves.begin(), moves.end()), moves.end()
+        );
+
+        return moves;
+    }
+
+	
+    constexpr inline std::vector<FullPiece> find_moves(const BitBoard& board, const Piece& piece)noexcept
+    {
+        // initial check to see if the peice is colliding with the board
+        if (board.isCollide(piece))
+        {
+            return{};
+        }
+
+        std::vector<FullPiece> moves;
+
+        inputNode root = inputNode(FullPiece({}, piece, spin::None));
+        std::vector<inputNode*> nodes = { &root };
+        nodes.reserve(127);
+
+        std::vector<inputNode*> nextNodes;
+        nextNodes.reserve(127);
+
+        std::vector<uint16_t> packedPieces;
+        packedPieces.reserve(127);
+
+
+        // limiting the depth of the search to inf but can be increased later on if needed
+        for (uint_fast16_t depth = 0;; depth++)
+        {
+            for (auto& node : nodes)
+            {
+                auto& curNode = *node;
+                for (size_t i = 0; i < int(inputs::numberOfInputs); i++)
                 {
-                    for (size_t y = 0; y < intermediateBoard->at(spn).at(rot).at(x).size(); y++)
-                    {
-                        if (intermediateBoard->at(spn).at(rot).at(x).at(y) != nullptr)
-                        {
-                            spin temp;
-                            Piece p = playPiece(piece, intermediateBoard->at(spn).at(rot).at(x).at(y)->inputs, board, temp);
-                            if (!board.trySoftDrop(p))
-                                this->pieces.push_back(FullPiece(intermediateBoard->at(spn).at(rot).at(x).at(y)->inputs, p, temp));
-                            delete intermediateBoard->at(spn).at(rot).at(x).at(y);
-                        }
+                    std::vector<inputs> newHist;
+                    newHist.reserve(curNode.pieceData.inputs.size() + 1);
+                    newHist = curNode.pieceData.inputs;
+                    newHist.push_back((inputs)i);
+
+                    spin tSpinned = spin::None;
+
+                    const inputs& input = (inputs)i;
+                    // TODO allow inputs to be done simultaneously
+                    const FullPiece newFullPiece = FullPiece(newHist, playPiece(piece, newHist, board, tSpinned), tSpinned);
+
+                    auto tempPieceHash = hash(newFullPiece);
+                    auto iter = std::find(packedPieces.begin(), packedPieces.end(), tempPieceHash);
+
+                    // havent found the hash, new state!
+                    if (iter == packedPieces.end()) {
+                        // add the new hash to the state
+                        packedPieces.push_back(tempPieceHash);
+
+                        moves.push_back(newFullPiece);
+
+                        curNode.children[i] = new inputNode(newFullPiece);
+
+                        nextNodes.push_back(curNode.children[i]);
                     }
                 }
             }
+            std::swap(nextNodes, nodes);
+            nextNodes.clear();
+            if (nodes.size() == 0)
+                break;
         }
-        delete intermediateBoard;
-        return;
+
+        for (auto& move : moves) {
+            if (board.trySoftDrop(move.piece))
+            {
+                move.spin = spin::None;
+                board.sonicDrop(move.piece);
+            }
+        }
+
+        std::sort(moves.begin(), moves.end());
+        moves.erase(
+            std::unique(moves.begin(), moves.end()), moves.end()
+        );
+
+        return moves;
     }
 };
+
+consteval inline bool searchConstantEvalCheck() {
+    {
+        Board board;
+        Piece piece = PieceType::T;
+        movementBoard MB;
+        auto input = MB.find_moves(board, piece);
+        return input.at(0).inputs.at(0) == inputs::Left;
+    }
+}
