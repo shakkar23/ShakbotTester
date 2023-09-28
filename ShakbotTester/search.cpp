@@ -4,4 +4,5 @@
 
 constexpr void movementBoard::DijkstraFaithful(const Board& board, const Piece& piece) {
 
+
 }

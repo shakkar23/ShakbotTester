@@ -25,6 +25,7 @@
     <ClInclude Include="BoardAttr.hpp" />
     <ClInclude Include="Color.hpp" />
     <ClInclude Include="Coord.hpp" />
+    <ClInclude Include="fasthash.h" />
     <ClInclude Include="info.hpp" />
     <ClInclude Include="location.hpp" />
     <ClInclude Include="moves.hpp" />
@@ -38,6 +39,8 @@
   <ItemGroup>
     <ClCompile Include="BitBoard.cpp" />
     <ClCompile Include="Board.cpp" />
+    <ClCompile Include="CCsearch.cpp" />
+    <ClCompile Include="fasthash.c" />
     <ClCompile Include="Piece.cpp" />
     <ClCompile Include="PieceDef.cpp" />
     <ClCompile Include="Rotation.cpp" />
@@ -120,6 +123,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/constexpr:steps100000000000 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,7 +139,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalOptions>/constexpr:steps100000000000 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -168,9 +173,10 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <AdditionalOptions>/constexpr:steps100000000000 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -245,31 +245,53 @@ class Visualizer : public olc::PixelGameEngine {
 	
 
 	// get all the possible piece placements, playing as the piece you pass in 
-	void bitPlay(const Piece& piece) {
+	constexpr void fromPlay(const Piece& piece) {
 
 		using namespace std::chrono;
 
 		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		moveSelected = 0;
-		BitBoard bitty;
-		bitty = bitty.fromBoard(tet.board);
 
-		for (int i = 0; i < 10000; ++i)
-			tet.moveBoard->find_moves(bitty, piece);
+		tet.moveBoard->find_moves(tet.board, piece);
 
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
 		auto time_span = duration_cast<microseconds>((t2 - t1));
 
-		std::cout << time_span / 10000 << std::endl;
+		std::cout << time_span << std::endl;
 	}
-	void normalPlay(const Piece& piece) {
-
-		using namespace std::chrono;
-
-		high_resolution_clock::time_point t1 = high_resolution_clock::now();
-		moveSelected = 0;
-		BitBoard bitty;
-		bitty = bitty.fromBoard(tet.board);
+	
+	constexpr void queueShenanigans(const Board  board,const std::array<Piece, 5> &queue) {
+		int curPiece = 0;
+		Piece emulatedHold = PieceType::empty;
+		uint_fast8_t bitmask = 0;
+		uint_fast8_t bitmask2 = 0;
+		for (int_fast8_t i = 0; i < 4; i++)
+		{
+			bitmask |= (1 << i);
+		}
+		std::array<Piece, 5> queueCopy = queue;
+		
+		while (bitmask2 != bitmask)
+		{
+			// if piece is out of bounds
+			if (bitmask & (1 << curPiece)) {
+				curPiece = 0;
+				bitmask2++;
+				queueCopy = queue;
+			}
+			//if hold
+			if (bitmask2 & (1 << curPiece))
+			{
+				std::swap(queueCopy.at(curPiece), emulatedHold);
+				if (queueCopy.at(curPiece).kind == PieceType::empty)
+				{
+					curPiece++;
+					continue;
+				}
+			}
+			tet.moveBoard->find_moves(board, queueCopy.at(curPiece));
+			curPiece++;
+		}
 
 		for (int i = 0; i < 10000; ++i)
 			tet.moveBoard->find_moves(bitty, piece);
@@ -292,18 +314,10 @@ public:
 
 	bool OnUserCreate() override
 	{
-		moves = tet.moveBoard->find_moves(tet.board, tet.piece);
-		sAppName = "Shot";
-		boardScreenWidth = int(ScreenWidth() * 0.9);
-		boardScreenHeight = int(ScreenHeight() * 0.9);
 
-		//tet.piece = Piece(PieceType::T, 1, 0);
-		DrawRect(0,0, BoardScreenWidth(), BoardScreenHeight());
-		renderBoard(tet.board); 
-		
-		tet.queue = { PieceType::T,PieceType::I,PieceType::O,PieceType::L,PieceType::J };
-		for (int i = 0; i < tet.queue.size(); i++)
-			renderQueuePiece(tet.queue[i], i);
+		tet.piece = Piece(PieceType::T, 1, 0);
+		DrawRect(0,0, ScreenWidth() * (0.90), ScreenHeight() * (0.90));
+		renderBoard(tet.board);
 		return true;
 	}
 	
@@ -325,24 +339,22 @@ public:
 					}
 				renderBoard(tet.board);
 
-			}
-			else if (mouseR.bHeld) {
-				if (mousePos.x > 0 && mousePos.x < (BoardScreenWidth()))
-					if (mousePos.y > 0 && mousePos.y < (BoardScreenHeight()))
-					{
-						int sw = BoardScreenWidth();
-						int cellSize = sw / BOARDWIDTH;
-
-						int y = VISUALBOARDHEIGHT - (mousePos.y / cellSize) - 1;
-						int x = mousePos.x / cellSize;
-						tet.board.board[x][y] = empty;
-					}
-				renderBoard(tet.board);
-
-			}
 		}
-		if (GetKey(olc::RIGHT).bPressed) {
-			moveSelected += moves.size();
+		else if (mouseR.bHeld) {
+			if (mousePos.x > 0 && mousePos.x < (ScreenWidth()  * (0.90)))
+				if (mousePos.y > 0 && mousePos.y < (ScreenHeight() * (0.90)))
+				{
+					int sw = ScreenWidth() * (0.90);
+					int cellSize = sw / BOARDWIDTH;
+					
+					int y = VISUALBOARDHEIGHT - (mousePos.y / cellSize) - 1;
+					int x = mousePos.x / cellSize;
+					tet.board.board[x][y] = empty;
+				}
+			renderBoard(tet.board);
+
+		}
+		if (auto key = GetKey(olc::RIGHT); key.bPressed) {
 			moveSelected++;
 			moveSelected %= moves.size();
 
@@ -381,29 +393,29 @@ public:
 
 				std::chrono::milliseconds timespan(0);
 
-				std::jthread guh([&]() {tet.concurrentThread(); });
+			using namespace std::chrono;
 
-				std::this_thread::sleep_for(timespan);
-				tet.needPlays = true;
-				guh.join();
-				// if the bot dies on the first piece the bool for need plays is still true
-				tet.needPlays = false;
+			high_resolution_clock::time_point t1 = high_resolution_clock::now();
+			int holder = go(tet.board, 0);
 
-				auto end = std::chrono::high_resolution_clock::now();
-				std::chrono::duration<double, std::milli> elapsed = end - start;
+			high_resolution_clock::time_point t2 = high_resolution_clock::now();
+			auto time_span = duration_cast<microseconds>((t2 - t1));
 
-				std::cout << "Waited " << elapsed.count() << " ms\n";
+			std::cout << time_span << std::endl;
+		}
+		else if (auto key = GetKey(olc::ENTER); key.bPressed) {
+			fromPlay(PieceType::T);
+			constexpr bool onePieceAtATime = false;
 
+			if (onePieceAtATime) {
+				if (tet.moveBoard->pieces.size() != 0)
+					renderPiece(tet.moveBoard->pieces.at(moveSelected %= (tet.moveBoard->pieces.size())).piece);
 			}
-				renderInt(tet.damage);
-				queuePlay(tet.queue, tet.hold);
-				tet.queue.erase(tet.queue.begin());
-				while(tet.queue.size() != 8)
-					tet.queue.emplace_back(PieceType(rand() % 7));
-				for (int i = 0; i < tet.queue.size(); i++)
-					renderQueuePiece(tet.queue[i], i);
-				renderQueuePiece(tet.hold, 12);
-				renderBoard(tet.board);
+			else {
+				if (tet.moveBoard->pieces.size() != 0)
+					for (const auto& piece : tet.moveBoard->pieces)
+						renderPiece(piece.piece);
+			}
 		}
 		else if (GetKey(olc::K3).bPressed)
 		{

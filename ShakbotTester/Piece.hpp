@@ -5,6 +5,7 @@
 #include <tuple>
 #include <array>
 #include <stdint.h>
+#include <unordered_set>
 
 constexpr inline auto MINOSINAPIECE = 4;
 
@@ -123,6 +124,27 @@ public:
         /* Can't use default because then piecedef would be included. */
         return thisPiece < otherPiece;
     }
+
+    constexpr bool operator <(const Piece& other) const noexcept {
+
+        uint16_t thisPiece{};
+        // has 4 states
+        thisPiece |= static_cast<uint16_t>(spin) << 0;
+        // has a range of 0 - 40
+        thisPiece |= static_cast<uint16_t>(y) << 2;
+        // has a range of 0 to 10
+        thisPiece |= static_cast<uint16_t>(x) << 8;
+
+        uint16_t otherPiece{};
+        // has 4 states
+        otherPiece |= static_cast<uint16_t>(other.spin) << 0;
+        // has a range of 0 - 40
+        otherPiece |= static_cast<uint16_t>(other.y) << 2;
+        // has a range of 0 to 10
+        otherPiece |= static_cast<uint16_t>(other.x) << 8;
+        /* Can't use default because then piecedef would be included. */
+        return thisPiece < otherPiece;
+    }
     constexpr inline Piece(PieceType kind, int_fast8_t x = 4, int_fast8_t y = VISUALBOARDHEIGHT - 2,
         RotationDirection spin = RotationDirection::North)noexcept
     {
@@ -156,7 +178,7 @@ public:
             break;
         }
     }
-
+	
     constexpr inline Piece() = delete;
 
 
@@ -204,3 +226,21 @@ public:
     int_fast8_t x{};
     int_fast8_t y{};
 };
+
+
+namespace std {
+    template<> struct hash<Piece> {
+        std::size_t operator()(const Piece& piece) const {
+            std::size_t piecePack{};
+            piecePack = int(piece.kind);
+            piecePack <<= 4;
+			piecePack |= int(piece.spin);
+			piecePack <<= 4;
+			piecePack |= piece.x;
+			piecePack <<= 4;
+			piecePack |= piece.y;
+			
+            return piecePack;
+        }
+    };
+}

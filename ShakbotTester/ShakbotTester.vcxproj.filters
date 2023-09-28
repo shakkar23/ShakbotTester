@@ -28,6 +28,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="Source Files\hash">
+      <UniqueIdentifier>{8cdfefdc-3f7b-473b-a12d-14ff576ffe67}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="olcPixelGameEngine.h">
@@ -97,9 +100,6 @@
     </ClCompile>
     <ClCompile Include="TetrisBot.cpp">
       <Filter>Source Files\Bot</Filter>
-    </ClCompile>
-    <ClCompile Include="BitBoard.cpp">
-      <Filter>Source Files\Board</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
