@@ -13,7 +13,7 @@
 #include <functional>
 #include <cmath>
 #include <cstdlib>
-
+#include <bit>
 class movementBoard;
 class Tetris
 {

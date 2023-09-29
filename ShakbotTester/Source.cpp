@@ -219,6 +219,7 @@ class Visualizer : public olc::PixelGameEngine {
 			if (queue[0].kind == PieceType::empty)
 				queue.erase(queue.begin());
 		}
+		tet.botReturnInput.push_back(inputs::SonicDrop);
 		Piece piece = playPiece(play, tet.botReturnInput, tet.board, tSpinned);
 		tet.board.setPiece(piece);
 		tet.board.clearLines();
@@ -292,7 +293,7 @@ public:
 
 	bool OnUserCreate() override
 	{
-		moves = tet.moveBoard->find_moves(tet.board, tet.piece);
+		moves = tet.moveBoard->find_moves(BitBoard::fromBoard(tet.board), tet.piece);
 		sAppName = "Shot";
 		boardScreenWidth = int(ScreenWidth() * 0.9);
 		boardScreenHeight = int(ScreenHeight() * 0.9);
@@ -447,7 +448,6 @@ public:
 };
 
 int main() {
-	const bool shouldBeTrue = searchConstantEvalCheck();
 	Visualizer pixelGameEngine;
 
 	if (pixelGameEngine.Construct(SCREENWIDTH, SCREENHEIGHT, 4, 4))

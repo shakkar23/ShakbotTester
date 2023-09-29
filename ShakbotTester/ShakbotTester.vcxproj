@@ -25,6 +25,7 @@
     <ClInclude Include="BoardAttr.hpp" />
     <ClInclude Include="Color.hpp" />
     <ClInclude Include="Coord.hpp" />
+    <ClInclude Include="fasthash.h" />
     <ClInclude Include="info.hpp" />
     <ClInclude Include="location.hpp" />
     <ClInclude Include="moves.hpp" />
@@ -38,6 +39,7 @@
   <ItemGroup>
     <ClCompile Include="BitBoard.cpp" />
     <ClCompile Include="Board.cpp" />
+    <ClCompile Include="fasthash.c" />
     <ClCompile Include="Piece.cpp" />
     <ClCompile Include="PieceDef.cpp" />
     <ClCompile Include="Rotation.cpp" />

@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <array>
 #include <queue>
-
+#include "fasthash.h"
 
 
 enum class inputs : uint_fast8_t
@@ -121,6 +121,9 @@ public:
     constexpr bool operator==(const FullPiece& other) {
         return piece == other.piece && spin == other.spin;
     }
+    constexpr bool operator==(FullPiece& other) {
+        return piece == other.piece && spin == other.spin;
+    }
     constexpr bool operator<(const FullPiece& other) {
         return piece < other.piece;
     }
@@ -129,19 +132,9 @@ public:
     Piece piece;
     spin spin;
 };
-constexpr uint16_t hash(const FullPiece& piece) {
-        uint16_t hash{};
-        // has 4 states
-        hash |= static_cast<uint16_t>(piece.piece.spin) << 2;
-        // has a range of 0 to 10
-        hash |= static_cast<uint16_t>(piece.piece.x)    << 4;
-        // has a range of 0 - 40
-        hash |= static_cast<uint16_t>(piece.piece.y)    << 8;
-        // has 3 states
-        hash |= static_cast<uint16_t>(piece.spin)       << 2;
-
-        return hash;
-    }
+const inline uint32_t hash(const FullPiece& piece) {
+        return fasthash32(&piece.piece, sizeof(piece.piece), 123456789);
+}
 
 
 struct inputNode
@@ -182,89 +175,9 @@ public:
 	constexpr void DijkstraFaithful(const Board& board, const Piece& piece);
     private:
         
-public:
-    constexpr inline std::vector<FullPiece> find_moves(const Board& board, const Piece& piece) const noexcept
-    {
-
-        //clearBoard();
-        // initial check to see if the peice is colliding with the board
-        if (board.isCollide(piece))
-        {
-            return{};
-        }
-
-        std::vector<FullPiece> moves;
-
-        inputNode root = inputNode(FullPiece({}, piece, spin::None));
-        std::vector<inputNode*> nodes = { &root };
-        nodes.reserve(127);
-
-        std::vector<inputNode*> nextNodes;
-        nextNodes.reserve(127);
-
-        std::vector<uint16_t> packedPieces;
-        packedPieces.reserve(127);
-
-
-        // limiting the depth of the search to inf but can be increased later on if needed
-        for (uint_fast16_t depth = 0;; depth++)
-        {
-            for (auto& node : nodes)
-            {
-                auto& curNode = *node;
-                for (size_t i = 0; i < int(inputs::numberOfInputs); i++)
-                {
-                    std::vector<inputs> newHist;
-                    newHist.reserve(curNode.pieceData.inputs.size() + 1);
-                    newHist = curNode.pieceData.inputs;
-                    newHist.push_back((inputs)i);
-
-                    spin tSpinned = spin::None;
-
-                    const inputs& input = (inputs)i;
-                    // TODO allow inputs to be done simultaneously
-                    const FullPiece newFullPiece = FullPiece(newHist, playPiece(piece, newHist, board, tSpinned), tSpinned);
-
-                    auto tempPieceHash = hash(newFullPiece);
-                    auto iter = std::find(packedPieces.begin(), packedPieces.end(), tempPieceHash);
-
-                    // havent found the hash, new state!
-                    if (iter == packedPieces.end()) {
-                        // add the new hash to the state
-                        packedPieces.push_back(tempPieceHash);
-                        
-                        moves.push_back(newFullPiece);
-
-                        curNode.children[i] =  new inputNode(newFullPiece);
-
-                        nextNodes.push_back(curNode.children[i]);
-                    }
-                }
-            }
-            std::swap(nextNodes, nodes);
-            nextNodes.clear();
-            if (nodes.size() == 0)
-                break;
-        }
-        
-        for (auto &move : moves) {
-            if (board.trySoftDrop(move.piece))
-            {
-                move.spin = spin::None;
-                board.sonicDrop(move.piece);
-            }
-        }
-                
-        std::sort(moves.begin(), moves.end());
-        moves.erase(
-            std::unique(moves.begin(), moves.end()), moves.end()
-        );
-
-        return moves;
-    }
-
-	
-    constexpr inline std::vector<FullPiece> find_moves(const BitBoard& board, const Piece& piece)noexcept
+public:	
+    typedef uint32_t piece_hash;
+    const inline std::vector<FullPiece> find_moves(const BitBoard& board, const Piece& piece)noexcept
     {
         // initial check to see if the peice is colliding with the board
         if (board.isCollide(piece))
@@ -276,41 +189,39 @@ public:
 
         inputNode root = inputNode(FullPiece({}, piece, spin::None));
         std::vector<inputNode*> nodes = { &root };
-        nodes.reserve(127);
+        nodes.reserve(150);
 
         std::vector<inputNode*> nextNodes;
-        nextNodes.reserve(127);
+        nextNodes.reserve(150);
 
-        std::vector<uint16_t> packedPieces;
-        packedPieces.reserve(127);
+        // all the previous nodes that ive hit so far
+        std::unordered_map<piece_hash, int> packedPieces;
 
 
         // limiting the depth of the search to inf but can be increased later on if needed
-        for (uint_fast16_t depth = 0;; depth++)
+        while (true)
         {
             for (auto& node : nodes)
             {
                 auto& curNode = *node;
                 for (size_t i = 0; i < int(inputs::numberOfInputs); i++)
                 {
-                    std::vector<inputs> newHist;
-                    newHist.reserve(curNode.pieceData.inputs.size() + 1);
+                    std::vector<inputs> newHist(curNode.pieceData.inputs.size() + 1);
                     newHist = curNode.pieceData.inputs;
                     newHist.push_back((inputs)i);
 
                     spin tSpinned = spin::None;
 
-                    const inputs& input = (inputs)i;
                     // TODO allow inputs to be done simultaneously
                     const FullPiece newFullPiece = FullPiece(newHist, playPiece(piece, newHist, board, tSpinned), tSpinned);
 
-                    auto tempPieceHash = hash(newFullPiece);
-                    auto iter = std::find(packedPieces.begin(), packedPieces.end(), tempPieceHash);
+                    const auto tempPieceHash = hash(newFullPiece);
+                    const auto iter = packedPieces.find(tempPieceHash);
 
                     // havent found the hash, new state!
                     if (iter == packedPieces.end()) {
                         // add the new hash to the state
-                        packedPieces.push_back(tempPieceHash);
+                        packedPieces[tempPieceHash] = 0;
 
                         moves.push_back(newFullPiece);
 
@@ -342,13 +253,3 @@ public:
         return moves;
     }
 };
-
-consteval inline bool searchConstantEvalCheck() {
-    {
-        Board board;
-        Piece piece = PieceType::T;
-        movementBoard MB;
-        auto input = MB.find_moves(board, piece);
-        return input.at(0).inputs.at(0) == inputs::Left;
-    }
-}
