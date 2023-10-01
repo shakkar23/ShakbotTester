@@ -342,9 +342,38 @@ public:
 
 			}
 		}
-		if (GetKey(olc::RIGHT).bPressed) {
-			moveSelected += moves.size();
-			moveSelected++;
+
+		if (GetKey(olc::S).bPressed)
+		{
+			tet.piece = Piece(PieceType::S);
+		}
+		else if (GetKey(olc::Z).bPressed)
+		{
+			tet.piece = Piece(PieceType::Z);
+		}
+		else if (GetKey(olc::J).bPressed)
+		{
+			tet.piece = Piece(PieceType::J);
+		}
+		else if (GetKey(olc::L).bPressed)
+		{
+			tet.piece = Piece(PieceType::L);
+		}
+		else if (GetKey(olc::T).bPressed)
+		{
+			tet.piece = Piece(PieceType::T);
+		}
+		else if (GetKey(olc::O).bPressed)
+		{
+			tet.piece = Piece(PieceType::O);
+		}
+		else if (GetKey(olc::I).bPressed)
+		{
+			tet.piece = Piece(PieceType::I);
+		}
+		else if (GetKey(olc::RIGHT).bPressed) {
+		moveSelected += moves.size();
+		moveSelected++;
 			moveSelected %= moves.size();
 
 			renderBoard(tet.board);
@@ -363,6 +392,14 @@ public:
 		else if (GetKey(olc::SHIFT).bPressed) {
 		}
 		else if (GetKey(olc::ENTER).bPressed) {
+			auto all = tet.moveBoard->find_moves(BitBoard::fromBoard(tet.board), tet.piece);
+
+			renderBoard(tet.board);
+			for (int i = 0; i < all.size(); i++)
+			{
+				renderPiece(all[i].piece);
+			}
+
 		}
 
 		if (GetKey(olc::K1).bPressed)
@@ -380,7 +417,7 @@ public:
 				using namespace std::chrono_literals;
 				auto start = std::chrono::high_resolution_clock::now();
 
-				std::chrono::milliseconds timespan(0);
+				std::chrono::milliseconds timespan(5);
 
 				std::jthread guh([&]() {tet.concurrentThread(); });
 
@@ -448,6 +485,16 @@ public:
 };
 
 int main() {
+	srand(time(NULL));
+	std::cout 
+		<< "Press the key you want to change the current piece to that type" << std::endl
+		<< "Press Enter to show all the possible moves" << std::endl
+		<< "Press 1 to show the current score" << std::endl
+		<< "Press 2 to play the bot for 5 miliseconds" << std::endl
+		<< "Press 3 to play the bot for 5 seconds" << std::endl
+		<< "Press 4 to clear the board" << std::endl;
+
+
 	Visualizer pixelGameEngine;
 
 	if (pixelGameEngine.Construct(SCREENWIDTH, SCREENHEIGHT, 4, 4))
