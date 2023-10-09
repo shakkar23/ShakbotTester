@@ -13,6 +13,8 @@ constexpr auto SCREENWIDTH = BOARDWIDTH * 10;
 class Visualizer : public olc::PixelGameEngine {
 	Tetris tet;
 	std::vector<FullPiece> moves;
+	ColorType pieceColor = O;
+
 	int BoardScreenWidth() {
 		return boardScreenWidth;
 	}
@@ -322,7 +324,7 @@ public:
 
 						int y = VISUALBOARDHEIGHT - (mousePos.y / cellSize) - 1;
 						int x = mousePos.x / cellSize;
-						tet.board.board[x][y] = O;
+						tet.board.board[x][y] = pieceColor;
 					}
 				renderBoard(tet.board);
 
@@ -345,31 +347,31 @@ public:
 
 		if (GetKey(olc::S).bPressed)
 		{
-			tet.piece = Piece(PieceType::S);
+			pieceColor = ColorType::S;
 		}
 		else if (GetKey(olc::Z).bPressed)
 		{
-			tet.piece = Piece(PieceType::Z);
+			pieceColor = ColorType::Z;
 		}
 		else if (GetKey(olc::J).bPressed)
 		{
-			tet.piece = Piece(PieceType::J);
+			pieceColor = ColorType::J;
 		}
 		else if (GetKey(olc::L).bPressed)
 		{
-			tet.piece = Piece(PieceType::L);
+			pieceColor = ColorType::L;
 		}
 		else if (GetKey(olc::T).bPressed)
 		{
-			tet.piece = Piece(PieceType::T);
+			pieceColor = ColorType::T;
 		}
 		else if (GetKey(olc::O).bPressed)
 		{
-			tet.piece = Piece(PieceType::O);
+			pieceColor = ColorType::O;
 		}
 		else if (GetKey(olc::I).bPressed)
 		{
-			tet.piece = Piece(PieceType::I);
+			pieceColor = ColorType::I;
 		}
 		else if (GetKey(olc::RIGHT).bPressed) {
 		moveSelected += moves.size();
@@ -487,7 +489,7 @@ public:
 int main() {
 	srand(time(NULL));
 	std::cout 
-		<< "Press the key you want to change the current piece to that type" << std::endl
+		<< "Press the key you want to change the drawing piece to that type" << std::endl
 		<< "Press Enter to show all the possible moves" << std::endl
 		<< "Press 1 to show the current score" << std::endl
 		<< "Press 2 to play the bot for 5 miliseconds" << std::endl
