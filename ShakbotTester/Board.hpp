@@ -61,16 +61,13 @@ public:
         if (whichLine >= LOGICALBOARDHEIGHT)
             whichLine = LOGICALBOARDHEIGHT - 1;
         // clear the line in question
-        for (size_t i = 0; i < BOARDWIDTH; i++)
-        {
+        for (std::size_t i = 0; i < BOARDWIDTH; i++) {
             board.at(i).at(whichLine) = empty;
         }
 
         // pull down the rest of the lines above the cleared line down
-        for (size_t w = 0; w < BOARDWIDTH; w++)
-        {
-            for (size_t h = whichLine; h < LOGICALBOARDHEIGHT; h++)
-            {
+        for (std::size_t w = 0; w < BOARDWIDTH; w++) {
+            for (std::size_t h = whichLine; h < LOGICALBOARDHEIGHT; h++) {
                 if (h == (LOGICALBOARDHEIGHT - 1))
                 {
 
@@ -154,8 +151,7 @@ public:
         }
         return false;
     }
-    constexpr inline bool tryRotate(Piece& piece, TurnDirection direction, spin& Tspinned) const noexcept
-    {
+    constexpr inline bool tryRotate(Piece& piece, TurnDirection direction, Spin& Tspinned) const noexcept {
         constexpr auto incrRotClockWise = [&](RotationDirection& spin) noexcept
         {
             switch (spin)
@@ -176,8 +172,7 @@ public:
                 break;
             }
         };
-        constexpr auto TspinDetection = [](const Piece& piece, const Board& board, spin& Tspinned, RotationDirection dir, int kick)noexcept
-        {
+        constexpr auto TspinDetection = [](const Piece& piece, const Board& board, Spin& Tspinned, RotationDirection dir, int kick) noexcept {
             constexpr auto isntEmpty = [](int x, int y, const Board& board)noexcept
             {
                 if ((((0 <= y) && (y < LOGICALBOARDHEIGHT))) && (((0 <= x) && (x < BOARDWIDTH)))) // if inbounds of board
@@ -211,44 +206,44 @@ public:
                 bool a = false, b = false, c = false, d = false;
                 switch (dir)
                 {
-                case North:
-                    a = isntEmpty(directionToCords[0][0].x + piece.x, directionToCords[0][0].y + piece.y, board);
-                    b = isntEmpty(directionToCords[0][1].x + piece.x, directionToCords[0][1].y + piece.y, board);
-                    c = isntEmpty(directionToCords[0][2].x + piece.x, directionToCords[0][2].y + piece.y, board);
-                    d = isntEmpty(directionToCords[0][3].x + piece.x, directionToCords[0][3].y + piece.y, board);
-                    break;
-                case East:
-                    a = isntEmpty(directionToCords[1][0].x + piece.x, directionToCords[1][0].y + piece.y, board);
-                    b = isntEmpty(directionToCords[1][1].x + piece.x, directionToCords[1][1].y + piece.y, board);
-                    c = isntEmpty(directionToCords[1][2].x + piece.x, directionToCords[1][2].y + piece.y, board);
-                    d = isntEmpty(directionToCords[1][3].x + piece.x, directionToCords[1][3].y + piece.y, board);
-                    break;
-                case South:
-                    a = isntEmpty(directionToCords[2][0].x + piece.x, directionToCords[2][0].y + piece.y, board);
-                    b = isntEmpty(directionToCords[2][1].x + piece.x, directionToCords[2][1].y + piece.y, board);
-                    c = isntEmpty(directionToCords[2][2].x + piece.x, directionToCords[2][2].y + piece.y, board);
-                    d = isntEmpty(directionToCords[2][3].x + piece.x, directionToCords[2][3].y + piece.y, board);
-                    break;
-                case West:
-                    a = isntEmpty(directionToCords[3][0].x + piece.x, directionToCords[3][0].y + piece.y, board);
-                    b = isntEmpty(directionToCords[3][1].x + piece.x, directionToCords[3][1].y + piece.y, board);
-                    c = isntEmpty(directionToCords[3][2].x + piece.x, directionToCords[3][2].y + piece.y, board);
-                    d = isntEmpty(directionToCords[3][3].x + piece.x, directionToCords[3][3].y + piece.y, board);
-                    break;
-                default:
-                    break;
+                    case North:
+                        a = isntEmpty(directionToCords[0][0].x + piece.x, directionToCords[0][0].y + piece.y, board);
+                        b = isntEmpty(directionToCords[0][1].x + piece.x, directionToCords[0][1].y + piece.y, board);
+                        c = isntEmpty(directionToCords[0][2].x + piece.x, directionToCords[0][2].y + piece.y, board);
+                        d = isntEmpty(directionToCords[0][3].x + piece.x, directionToCords[0][3].y + piece.y, board);
+                        break;
+                    case East:
+                        a = isntEmpty(directionToCords[1][0].x + piece.x, directionToCords[1][0].y + piece.y, board);
+                        b = isntEmpty(directionToCords[1][1].x + piece.x, directionToCords[1][1].y + piece.y, board);
+                        c = isntEmpty(directionToCords[1][2].x + piece.x, directionToCords[1][2].y + piece.y, board);
+                        d = isntEmpty(directionToCords[1][3].x + piece.x, directionToCords[1][3].y + piece.y, board);
+                        break;
+                    case South:
+                        a = isntEmpty(directionToCords[2][0].x + piece.x, directionToCords[2][0].y + piece.y, board);
+                        b = isntEmpty(directionToCords[2][1].x + piece.x, directionToCords[2][1].y + piece.y, board);
+                        c = isntEmpty(directionToCords[2][2].x + piece.x, directionToCords[2][2].y + piece.y, board);
+                        d = isntEmpty(directionToCords[2][3].x + piece.x, directionToCords[2][3].y + piece.y, board);
+                        break;
+                    case West:
+                        a = isntEmpty(directionToCords[3][0].x + piece.x, directionToCords[3][0].y + piece.y, board);
+                        b = isntEmpty(directionToCords[3][1].x + piece.x, directionToCords[3][1].y + piece.y, board);
+                        c = isntEmpty(directionToCords[3][2].x + piece.x, directionToCords[3][2].y + piece.y, board);
+                        d = isntEmpty(directionToCords[3][3].x + piece.x, directionToCords[3][3].y + piece.y, board);
+                        break;
+                    default:
+                        break;
                 }
                 if (a && b && (c || d))
-                    Tspinned = spin::Full;
+                    Tspinned = Spin::Full;
                 else if ((a || b) && c && d)
                 {   
                     if (kick >= (kicks - 1)) {
-                        Tspinned = spin::Full;
+                        Tspinned = Spin::Full;
                     } else
-                        Tspinned = spin::Mini;
+                        Tspinned = Spin::Mini;
                 }
-                else 
-                    Tspinned = spin::None;
+                else
+                    Tspinned = Spin::None;
             }
         };
         // temporary x and y to know their initial location

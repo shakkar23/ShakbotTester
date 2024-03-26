@@ -1,21 +1,21 @@
 #pragma once
 
-#include "Coord.hpp"
-#include "Board.hpp"
-#include "BitBoard.hpp"
-#include "BoardAttr.hpp"
-#include "Piece.hpp"
-#include <vector>
-#include <memory>
-#include <unordered_map>
+#include <algorithm>
 #include <array>
+#include <memory>
 #include <queue>
+#include <unordered_map>
+#include <vector>
+
+#include "BitBoard.hpp"
+#include "Board.hpp"
+#include "BoardAttr.hpp"
+#include "Coord.hpp"
+#include "Piece.hpp"
 #include "fasthash.h"
 
-
-enum class inputs : uint_fast8_t
-{
-	// normal inputs
+enum class Inputs : uint_fast8_t {
+    // normal inputs
     CW = 0,
     CCW = 1,
     Left = 2,
@@ -23,99 +23,86 @@ enum class inputs : uint_fast8_t
     SonicDrop = 4,
     numberOfInputs = 5,
     // special inputs that are not part of movegen
-	Hold = 6,
-	
+    Hold = 6,
+
 };
 // this class stores the time taken to get to this cell, and a vector of inputs that resulted getting to this cell
 
-constexpr inline Piece playPiece(const Piece& piece, const std::vector<inputs>& history, const  Board& board, spin& tSpinned) noexcept {
-
+constexpr inline Piece playPiece(const Piece& piece, const std::vector<Inputs>& history, const Board& board, Spin& tSpinned) noexcept {
     Piece tempPiece = piece;
-    for (const auto &input : history) {
+    for (const auto& input : history) {
         // TODO allow inputs to be done simultaneously
-        switch (input)
-        {
-        case inputs::CW:
-            if (board.tryRotate(tempPiece, Right, tSpinned))
+        switch (input) {
+            case Inputs::CW:
+                if (board.tryRotate(tempPiece, Right, tSpinned))
 
-                break;
-        case inputs::CCW:
-            if (board.tryRotate(tempPiece, Left, tSpinned))
+                    break;
+            case Inputs::CCW:
+                if (board.tryRotate(tempPiece, Left, tSpinned))
 
+                    break;
+            case Inputs::Left:
+                tempPiece.setX(tempPiece.x - 1);
+                if (board.isCollide(tempPiece)) {
+                    tempPiece.setX(tempPiece.x + 1);  // failed, go back
+                }
                 break;
-        case inputs::Left:
-            tempPiece.setX(tempPiece.x - 1);
-            if (board.isCollide(tempPiece))
-            {
-                tempPiece.setX(tempPiece.x + 1); // failed, go back
-            }
-            break;
-        case inputs::Right:
-            tempPiece.setX(tempPiece.x + 1);
-            if (board.isCollide(tempPiece))
-            {
-                tempPiece.setX(tempPiece.x - 1); // failed, go back
-            }
-            break;
-        case inputs::SonicDrop:
-            board.sonicDrop(tempPiece);
-        default:
-            break;
+            case Inputs::Right:
+                tempPiece.setX(tempPiece.x + 1);
+                if (board.isCollide(tempPiece)) {
+                    tempPiece.setX(tempPiece.x - 1);  // failed, go back
+                }
+                break;
+            case Inputs::SonicDrop:
+                board.sonicDrop(tempPiece);
+            default:
+                break;
         }
-
     }
-
 
     return tempPiece;
 }
-constexpr inline Piece playPiece(const Piece piece, const std::vector<inputs>& history, const BitBoard &board, spin& tSpinned) noexcept {
-
+constexpr inline Piece playPiece(const Piece piece, const std::vector<Inputs>& history, const BitBoard& board, Spin& tSpinned) noexcept {
     Piece tempPiece = piece;
-    for (const auto &input : history) {
+    for (const auto& input : history) {
         // TODO allow inputs to be done simultaneously
-        switch (input)
-        {
-        case inputs::CW:
-            board.tryRotate(tempPiece, Right, tSpinned);
-            break;
-        case inputs::CCW:
-            board.tryRotate(tempPiece, Left, tSpinned);
-            break;
-        case inputs::Left:
-            tempPiece.setX(tempPiece.x - 1);
-            if (board.isCollide(tempPiece))
-            {
-                tempPiece.setX(tempPiece.x + 1); // failed, go back
-            }
-            break;
-        case inputs::Right:
-            tempPiece.setX(tempPiece.x + 1);
-            if (board.isCollide(tempPiece))
-            {
-                tempPiece.setX(tempPiece.x - 1); // failed, go back
-            }
-            break;
-        case inputs::SonicDrop:
-            board.sonicDrop(tempPiece);
-        default:
-            break;
+        switch (input) {
+            case Inputs::CW:
+                board.tryRotate(tempPiece, Right, tSpinned);
+                break;
+            case Inputs::CCW:
+                board.tryRotate(tempPiece, Left, tSpinned);
+                break;
+            case Inputs::Left:
+                tempPiece.setX(tempPiece.x - 1);
+                if (board.isCollide(tempPiece)) {
+                    tempPiece.setX(tempPiece.x + 1);  // failed, go back
+                }
+                break;
+            case Inputs::Right:
+                tempPiece.setX(tempPiece.x + 1);
+                if (board.isCollide(tempPiece)) {
+                    tempPiece.setX(tempPiece.x - 1);  // failed, go back
+                }
+                break;
+            case Inputs::SonicDrop:
+                board.sonicDrop(tempPiece);
+            default:
+                break;
         }
-
     }
-
 
     return tempPiece;
 }
-
 
 class FullPiece {
-public:
-    constexpr FullPiece(std::vector<inputs> &inputs, Piece piece, spin &spin) noexcept 
-    : piece(piece), spin(spin) {
+   public:
+    constexpr FullPiece(std::vector<Inputs>& inputs, Piece piece, Spin& spin) noexcept
+        : piece(piece), spin(spin) {
         std::swap(inputs, this->inputs);
     }
 
-    constexpr FullPiece(std::vector<inputs> &&inputs,const Piece& piece,const spin &spin) noexcept 
+    constexpr FullPiece(std::vector<Inputs>&& inputs, const Piece& piece, const Spin& spin) noexcept
         : piece(piece), spin(spin), inputs(std::move(inputs)) {}
 
     constexpr bool operator==(const FullPiece& other) {
@@ -128,18 +115,16 @@ public:
         return piece < other.piece;
     }
 
-    std::vector<inputs> inputs;
+    std::vector<Inputs> inputs;
     Piece piece;
-    spin spin;
+    Spin spin;
 };
 const inline uint32_t hash(const FullPiece& piece) {
         return fasthash32(&piece.piece, sizeof(piece.piece), 123456789);
 }
 
-
-struct inputNode
-{
-public:
+class inputNode {
+   public:
     constexpr inline inputNode(FullPiece fullPiece) : pieceData(fullPiece), children({ nullptr ,nullptr ,nullptr ,nullptr ,nullptr }) {
 
     }
@@ -151,19 +136,17 @@ public:
                 delete i;
         }
     }
-    constexpr inline inputNode* getInputNode(const inputs input)const
-    {
+    constexpr inline inputNode* getInputNode(const Inputs input) const {
         return children.at((int)input);
     }
-    constexpr inline void setInputNode(const inputs input, inputNode* node)
-    {
+    constexpr inline void setInputNode(const Inputs input, inputNode* node) {
         if (children.at((int)input) != nullptr)
             delete children.at((int)input);
         children.at((int)input) = node;
     }
 
     FullPiece pieceData;
-    std::array<inputNode*, int(inputs::numberOfInputs)> children{};
+    std::array<inputNode*, int(Inputs::numberOfInputs)> children{};
 };
 
 // this class will store a board where each cell points to a piece and its movements to get to that cell
@@ -187,7 +170,7 @@ public:
 
         std::vector<FullPiece> moves;
 
-        inputNode root = inputNode(FullPiece({}, piece, spin::None));
+        inputNode root = inputNode(FullPiece({}, piece, Spin::None));
         std::vector<inputNode*> nodes = { &root };
         nodes.reserve(150);
 
@@ -204,13 +187,12 @@ public:
             for (auto& node : nodes)
             {
                 auto& curNode = *node;
-                for (size_t i = 0; i < int(inputs::numberOfInputs); i++)
-                {
-                    std::vector<inputs> newHist(curNode.pieceData.inputs.size() + 1);
+                for (size_t i = 0; i < int(Inputs::numberOfInputs); i++) {
+                    std::vector<Inputs> newHist(curNode.pieceData.inputs.size() + 1);
                     newHist = curNode.pieceData.inputs;
-                    newHist.push_back((inputs)i);
+                    newHist.push_back((Inputs)i);
 
-                    spin tSpinned = spin::None;
+                    Spin tSpinned = Spin::None;
 
                     // TODO allow inputs to be done simultaneously
                     const FullPiece newFullPiece = FullPiece(newHist, playPiece(piece, newHist, board, tSpinned), tSpinned);
@@ -240,7 +222,7 @@ public:
         for (auto& move : moves) {
             if (board.trySoftDrop(move.piece))
             {
-                move.spin = spin::None;
+                move.spin = Spin::None;
                 board.sonicDrop(move.piece);
             }
         }

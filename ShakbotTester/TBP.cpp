@@ -98,17 +98,15 @@ std::pair<int32_t, int32_t> Tetris::bumpiness(Board& board, size_t well)
 void Tetris::concurrentThread() {
     struct TetNode {
         constexpr TetNode(
-            const BitBoard& board, 
+            const BitBoard& board,
             int16_t score,
             int16_t linesCleared,
             int16_t damageSent,
-            const std::vector<std::vector<inputs>>& input, 
-            const std::vector<Piece>& queue, 
-            const Piece hold
-        )
-            : 
-            board(board), score(score),linesCleared(linesCleared), damageSent(damageSent), input(input), queue(queue), hold(hold) {};
-		
+            const std::vector<std::vector<Inputs>>& input,
+            const std::vector<Piece>& queue,
+            const Piece hold)
+            : board(board), score(score), linesCleared(linesCleared), damageSent(damageSent), input(input), queue(queue), hold(hold){};
+
         //overload the == operator for the priority queue
         constexpr bool operator==(const TetNode& other) const {
             return this->score == other.score;
@@ -133,7 +131,7 @@ void Tetris::concurrentThread() {
         int16_t score;
         int16_t linesCleared;
         int16_t damageSent;
-        std::vector<std::vector<inputs>> input;
+        std::vector<std::vector<Inputs>> input;
         std::vector<Piece> queue;
         std::vector<TetNode*> children;
         Piece hold = Piece(PieceType::empty);
@@ -205,7 +203,7 @@ void Tetris::concurrentThread() {
                     if (newBoard.isBoardEmpty())
                         nDamage = perfectClearDamage + damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)];
                     else
-                        nDamage = (damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)] * (1 + (p.spin == Full || p.spin == Mini)));
+                        nDamage = (damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)] * (1 + (p.spin == Spin::Full || p.spin == Spin::Mini)));
 
                     // create and set up the node to go into the tree
                     std::vector<Piece> newqueue = curNode->queue;
@@ -261,8 +259,8 @@ void Tetris::concurrentThread() {
                     if (newBoard.isBoardEmpty())
                         nDamage = perfectClearDamage + damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)];
                     else
-                        nDamage = (damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)] * (1 + (p.spin == Full || p.spin == Mini)));
-					
+                        nDamage = (damageTable[std::clamp(nCleared, 0, DAMAGETABLESIZE - 1)] * (1 + (p.spin == Spin::Full || p.spin == Spin::Mini)));
+
                     TetNode* newPN = new TetNode(
                         newBoard,
                         eval(newBoard, nCleared, curNode->damageSent + nDamage),
@@ -272,8 +270,8 @@ void Tetris::concurrentThread() {
                         curNode->hold);
 					
                     // hold specific
-                    std::vector<inputs> temp = { inputs::Hold };
-					
+                    std::vector<Inputs> temp = {Inputs::Hold};
+
                     for(const auto & i : p.inputs)
                         temp.push_back(i);
                     newPN->input.push_back(std::move(temp));

@@ -4,9 +4,8 @@
 #include <stdint.h>
 
 // a type for the piece location on the board
-class location
-{
-public:
+class Location {
+   public:
     PieceType type;
     RotationDirection rotation;
     Coord coord;
